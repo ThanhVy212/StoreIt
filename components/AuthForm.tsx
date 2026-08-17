@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/field";
 
 import { Input } from "@/components/ui/input";
-import {createAccount} from "@/lib/actions/user.actions";
+import {createAccount, signInUser} from "@/lib/actions/user.actions";
 import OTPModal from "@/components/OTPModal";
 
 type FormType = "sign-in" | "sign-up";
@@ -65,20 +65,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
     setErrorMessage("");
 
     try {
-      if (type === "sign-up") {
-        if (!values.fullName) {
-          throw new Error("Full name is required.");
-        }
-
-        const user = await createAccount({
-          fullName: values.fullName,
+        const user =
+            type === 'sign-up' ? await createAccount({
+          fullName: values.fullName!,
           email: values.email,
-        });
+        }) : await signInUser({email: values.email});
 
         setAccountId(user.accountId);
-      }
 
-      // TODO: sign-in logic
     } catch (error) {
       setErrorMessage(
           error instanceof Error ? error.message : "Something went wrong."
@@ -230,7 +224,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                       ? "/sign-up"
                       : "/sign-in"
                   }
-                  className="ml-1 font-medium text-primary hover:underline"
+                  className="ml-1 font-bold text-brand hover:underline"
                 >
                   {type === "sign-in"
                     ? "Sign Up"

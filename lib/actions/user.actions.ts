@@ -1,10 +1,12 @@
 'use server';
 
-import {createAdminClient} from "@/lib/appwrite";
+import {createAdminClient, createSessionClient} from "@/lib/appwrite";
 import {appwriteConfig} from "@/lib/appwrite/config";
 import {ID, Query} from "node-appwrite";
 import {parseStringify} from "@/lib/utils";
 import {cookies} from "next/headers";
+import {avatarPlaceholderUrl} from "@/constants";
+import {redirect} from "next/navigation";
 
 export const getUserByEmail = async (email: string) => {
     const { tablesDB } = await createAdminClient();
@@ -55,7 +57,7 @@ export const createAccount = async ({fullName, email,}: { fullName: string; emai
             data: {
                 fullName,
                 email,
-                avatar: "https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-avatar-placeholder-png-image_3416697.jpg",
+                avatar: avatarPlaceholderUrl,
             },
         });
     }
@@ -82,6 +84,57 @@ export const verifySecret = async ({ accountId, password }: {accountId: string, 
         return parseStringify({ sessionId: session.$id });
     } catch (err) {
         console.log("Failed to verify OTP:", err);
+        throw err;
+    }
+}
+
+export const getCurrentUser = async () => {
+    try {
+        const { tablesDB, account } = await createSessionClient();
+
+        const result = await account.get();
+
+        const user = await tablesDB.getRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.usersTableId,
+            rowId: result.$id,
+        });
+
+        return parseStringify(user);
+    } catch (err) {
+        console.log("Failed to get current user:", err);
+        return null;
+    }
+};
+
+export const signOutUser = async () => {
+    const {account} = await createSessionClient();
+
+    try {
+        await account.deleteSession({
+            sessionId: "current",
+        });
+        (await cookies()).delete("appwrite-session");
+    } catch (err) {
+        console.log("Error logging out:", err);
+    } finally {
+        redirect("/sign-in")
+    }
+}
+
+export const signInUser = async ({email}: {email: string}) => {
+    try {
+        const existingUser = await getUserByEmail(email);
+
+        if(existingUser) {
+            await sendEmailOTP({ email });
+            return parseStringify({ accountId: existingUser.$id });
+        }
+
+        return parseStringify({ accountId: null, errors: 'User not found' });
+
+    } catch (err) {
+        console.log("Failed to Sign in user:", err);
         throw err;
     }
 }

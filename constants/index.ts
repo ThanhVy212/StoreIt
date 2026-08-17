@@ -82,3 +82,5 @@ export const sortTypes = [
 ];
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+export const avatarPlaceholderUrl = "https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-avatar-placeholder-png-image_3416697.jpg";

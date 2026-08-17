@@ -1093,7 +1093,6 @@
 }
 
 .mobile-nav {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.25rem;
