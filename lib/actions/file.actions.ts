@@ -154,3 +154,51 @@ export const renameFile = async({fileId, name, extension, path}: RenameFileProps
         throw err;
     }
 }
+
+export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersProps) => {
+    const { tablesDB } = await createAdminClient();
+
+    try {
+        const updatedFile = await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+            data: {
+                users: emails,
+            },
+        });
+
+        revalidatePath(path);
+
+        return parseStringify(updatedFile);
+    } catch (err) {
+        console.log('Failed to update file users', err);
+        throw err;
+    }
+};
+
+export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) => {
+    const { tablesDB, storage } = await createAdminClient();
+
+    try {
+        await tablesDB.deleteRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+        });
+
+        await storage.deleteFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: bucketFileId,
+        });
+
+        revalidatePath(path);
+
+        return parseStringify({
+            status: "success",
+        });
+    } catch (err) {
+        console.log('Failed to delete file', err);
+        throw err;
+    }
+};

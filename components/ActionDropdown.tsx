@@ -3,7 +3,6 @@
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle
@@ -18,15 +17,16 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {FileRow} from "@/types/db.types";
 import Image from "next/image";
 import {actionsDropdownItems} from "@/constants";
-import {constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
+import {addExtension, constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import {renameFile} from "@/lib/actions/file.actions";
+import {deleteFile, renameFile, updateFileUsers} from "@/lib/actions/file.actions";
 import {usePathname} from "next/navigation";
+import {FileDetails, ShareInput} from "@/components/ActionsModalContent";
 
 
 
@@ -36,36 +36,53 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
     const [action, setAction] = useState<ActionType | null>(null);
     const [name, setName] = useState(removeExtension(file.name ?? ""))
     const [isLoading, setIsLoading] = useState(false);
+    const [emails, setEmails] = useState<string[]>([]);
 
     const path = usePathname();
+
+    useEffect(() => {
+        setName(removeExtension(file.name ?? ""));
+    }, [file.name]);
 
     const closeAllModals = () => {
         setIsModalOpen(false);
         setIsDropdownOpen(false);
         setAction(null);
         setName(removeExtension(file.name ?? ""));
-        // setEmails([]);
+        setEmails([]);
     }
 
     const handleAction = async () => {
         if(!action) return;
         setIsLoading(true);
-        let success = false;
+        let success: any = false;
 
         const actions = {
             rename: () => renameFile({fileId: file.$id, name: name.trim(), extension: file.extension!, path}),
-            share: () => console.log("share"),
-            delete: () => console.log("delete"),
+            share: () => updateFileUsers({fileId: file.$id, emails, path}),
+            delete: () => deleteFile({fileId: file.$id, bucketFileId: file.bucketFileId, path}),
         }
 
         success = await actions[action.value as keyof typeof actions]();
 
-        if (success) closeAllModals();
+        if (success) {
+            if (action.value === "rename" && success?.name) {
+                setName(removeExtension(success.name));
+            }
+            closeAllModals();
+        }
 
         setIsLoading(false);
     }
 
+    const handleRemoveUser = async (email: string) => {
+        const updatedEmails = emails.filter((e) => e !== email);
 
+        const success = await updateFileUsers({fileId: file.$id, emails: updatedEmails, path});
+
+        if(success) setEmails(updatedEmails);
+        closeAllModals();
+    }
 
     const renderDialogContent = () => {
         if(!action || !['rename', 'share', 'delete', 'details'].includes(action.value)) return null;
@@ -74,19 +91,28 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
 
         return (
             <DialogContent className="shad-dialog button">
-                <DialogHeader className="flex flex-col gap-3">
+                <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                     <DialogTitle className="text-center text-light-100">
                         {label}
                     </DialogTitle>
-                    <DialogDescription className="text-center text-light-200">
-                        This action cannot be undone
-                    </DialogDescription>
                     {value === "rename" && (
                         <Input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
+                    )}
+                    {value === "details" && (
+                        <FileDetails file={file} />
+                    )}
+                    {value === "share" && (
+                        <ShareInput file={file} onInputChange={setEmails} onRemove={handleRemoveUser}/>
+                    )}
+                    {value === "delete" && (
+                        <p className="delete-confirmation">
+                            Are you sure you want to delete {` `}
+                            <span className="delete-file-name">{addExtension(name, file.extension!)}</span>?
+                        </p>
                     )}
                 </DialogHeader>
                 {['rename', 'delete', 'share'].includes(value) && (
@@ -122,7 +148,7 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                         className="cursor-pointer"
                     />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="min-w-[200px]">
                     <DropdownMenuGroup>
                         <DropdownMenuLabel className="max-w-[200px] truncate">{file.name}</DropdownMenuLabel>
                     </DropdownMenuGroup>
@@ -137,6 +163,10 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                                         downloadFile(constructDownloadUrl(file.bucketFileId), file.name);
                                         setIsDropdownOpen(false);
                                         return;
+                                    }
+
+                                    if (item.value === "rename") {
+                                        setName(removeExtension(file.name ?? ""));
                                     }
 
                                     setAction(item);

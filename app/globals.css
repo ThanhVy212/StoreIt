@@ -678,6 +678,10 @@
           transparent
   );
   padding: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .file-details-label {

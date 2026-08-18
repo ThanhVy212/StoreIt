@@ -90,6 +90,18 @@ export const removeExtension = (fileName: string) => {
   return fileName.substring(0, lastDotIndex).trim();
 };
 
+export const addExtension = (fileName: string, extension: string) => {
+  if (!fileName) return '';
+
+  if (!extension) return fileName.trim();
+
+  const cleanExtension = extension.startsWith(".")
+      ? extension
+      : `.${extension}`;
+
+  return `${fileName.trim()}${cleanExtension}`;
+};
+
 export const sanitizeFileName = (fileName: string): string => {
   if (!fileName) return fileName;
 
