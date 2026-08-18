@@ -11,7 +11,12 @@ const nextConfig: NextConfig = {
               hostname: 'cloud.appwrite.io',
           }
       ]
-  }
+  },
+  experimental: {
+      serverActions: {
+        bodySizeLimit: "100MB",
+      },
+  },
 };
 
 export default nextConfig;

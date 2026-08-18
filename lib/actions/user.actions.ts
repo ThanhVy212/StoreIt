@@ -100,7 +100,10 @@ export const getCurrentUser = async () => {
             rowId: result.$id,
         });
 
-        return parseStringify(user);
+        return parseStringify({
+            ...user,
+            accountId: user.$id,
+        });
     } catch (err) {
         console.log("Failed to get current user:", err);
         return null;
