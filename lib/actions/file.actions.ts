@@ -60,38 +60,49 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
     }
 }
 
-const createQueries = (currentUser: UserRow, types: string[], searchText: string, sort: string, limit?: number) => {
+const createQueries = (
+    currentUser: UserRow,
+    types: string[],
+    searchText: string,
+    sort: string,
+    limit?: number
+) => {
     const queries = [
         Query.or([
             Query.equal("owner", [currentUser.$id]),
             Query.contains("users", [currentUser.email]),
         ]),
+
+        Query.select([
+            "*",
+            "owner.*",
+        ]),
     ];
 
-    if(types.length >= 0) {
+    if (types.length > 0) {
         queries.push(Query.equal("type", types));
     }
 
-    if(searchText) {
+    if (searchText) {
         queries.push(Query.contains("name", searchText));
     }
 
-    if(sort) {
+    if (sort) {
         const [sortBy, orderBy] = sort.split("-");
 
         queries.push(
             orderBy === "asc"
                 ? Query.orderAsc(sortBy)
-                : Query.orderDesc(sortBy),
+                : Query.orderDesc(sortBy)
         );
     }
 
-    if(limit) {
+    if (limit) {
         queries.push(Query.limit(limit));
     }
 
     return queries;
-}
+};
 
 export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit}: GetFilesProps) => {
     const {tablesDB} = await createAdminClient();
