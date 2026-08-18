@@ -22,7 +22,7 @@ declare interface UploadFileProps {
     path: string;
 }
 declare interface GetFilesProps {
-    types: FileType[];
+    types?: FileType[];
     searchText?: string;
     sort?: string;
     limit?: number;
@@ -76,3 +76,4 @@ declare interface ShareInputProps {
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onRemove: (email: string) => void;
 }
+
