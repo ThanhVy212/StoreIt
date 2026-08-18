@@ -4,7 +4,7 @@ import {createAdminClient} from "@/lib/appwrite";
 import {InputFile} from "node-appwrite/file";
 import {appwriteConfig} from "@/lib/appwrite/config";
 import {ID, Query} from "node-appwrite";
-import {constructFileUrl, getFileType, parseStringify} from "@/lib/utils";
+import {constructFileUrl, formatFileName, getFileType, parseStringify, sanitizeFileName} from "@/lib/utils";
 import {revalidatePath} from "next/cache";
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import {UserRow} from "@/types/db.types";
@@ -22,11 +22,14 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
             file: inputFile,
         });
 
+        const fileName = sanitizeFileName(bucketFile.name);
+        const {type, extension} = getFileType(fileName);
+
         const fileDocument = {
-            type: getFileType(bucketFile.name).type,
-            name: bucketFile.name,
+            type,
+            name: fileName,
             url: constructFileUrl(bucketFile.$id),
-            extension: getFileType(bucketFile.name).extension,
+            extension,
             size: bucketFile.sizeOriginal,
             owner: ownerId,
             accountId,
@@ -125,6 +128,29 @@ export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-
         return parseStringify(files);
     } catch (err) {
         console.log('Failed to get files', err);
+        throw err;
+    }
+}
+
+export const renameFile = async({fileId, name, extension, path}: RenameFileProps) => {
+    const {tablesDB} = await createAdminClient();
+
+    try {
+        const newName = formatFileName(name, extension);
+
+        const updatedFile = await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+            data: {
+                name: newName,
+            },
+        });
+
+        revalidatePath(path);
+        return parseStringify(updatedFile);
+    } catch (err) {
+        console.log('Failed to rename file', err);
         throw err;
     }
 }

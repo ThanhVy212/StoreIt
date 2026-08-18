@@ -81,6 +81,36 @@ export const getFileType = (fileName: string) => {
   return { type: 'other', extension };
 };
 
+export const removeExtension = (fileName: string) => {
+  if (!fileName) return '';
+  const lastDotIndex = fileName.lastIndexOf(".");
+
+  if (lastDotIndex === -1) return fileName.trim();
+
+  return fileName.substring(0, lastDotIndex).trim();
+};
+
+export const sanitizeFileName = (fileName: string): string => {
+  if (!fileName) return fileName;
+
+  const lastDotIndex = fileName.lastIndexOf(".");
+  if (lastDotIndex === -1) {
+    return fileName.trim();
+  }
+
+  const name = fileName.substring(0, lastDotIndex).trim();
+  const extension = fileName.substring(lastDotIndex + 1).trim();
+
+  return extension ? `${name}.${extension}` : name;
+};
+
+export const formatFileName = (name: string, extension?: string | null): string => {
+  const cleanName = (name ?? '').trim();
+  if (!extension) return cleanName;
+  const cleanExtension = extension.replace(/^\./, '').trim();
+  return cleanExtension ? `${cleanName}.${cleanExtension}` : cleanName;
+};
+
 export const formatDateTime = (isoString: string | null | undefined) => {
   if (!isoString) return '—';
 
@@ -186,6 +216,34 @@ export const constructFileUrl = (bucketFileId: string) => {
 
 export const constructDownloadUrl = (bucketFileId: string) => {
   return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_BUCKET}/files/${bucketFileId}/download?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`;
+};
+
+
+export const downloadFile = async (url: string, fileName: string) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Download error:', error);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 };
 
 // DASHBOARD UTILS

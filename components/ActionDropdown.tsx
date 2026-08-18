@@ -22,10 +22,11 @@ import React, {useState} from 'react';
 import {FileRow} from "@/types/db.types";
 import Image from "next/image";
 import {actionsDropdownItems} from "@/constants";
-import Link from "next/link";
-import {constructDownloadUrl} from "@/lib/utils";
+import {constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
+import {renameFile} from "@/lib/actions/file.actions";
+import {usePathname} from "next/navigation";
 
 
 
@@ -33,25 +34,41 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [action, setAction] = useState<ActionType | null>(null);
-    const [name, setName] = useState(file.name ?? "");
+    const [name, setName] = useState(removeExtension(file.name ?? ""))
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleCloseModals = () => {
+    const path = usePathname();
+
+    const closeAllModals = () => {
         setIsModalOpen(false);
         setIsDropdownOpen(false);
         setAction(null);
-        setName(file.name ?? "");
+        setName(removeExtension(file.name ?? ""));
         // setEmails([]);
     }
 
-    const handleAction = () => {
+    const handleAction = async () => {
+        if(!action) return;
+        setIsLoading(true);
+        let success = false;
 
+        const actions = {
+            rename: () => renameFile({fileId: file.$id, name: name.trim(), extension: file.extension!, path}),
+            share: () => console.log("share"),
+            delete: () => console.log("delete"),
+        }
+
+        success = await actions[action.value as keyof typeof actions]();
+
+        if (success) closeAllModals();
+
+        setIsLoading(false);
     }
 
 
 
     const renderDialogContent = () => {
-        if(!action) return null;
+        if(!action || !['rename', 'share', 'delete', 'details'].includes(action.value)) return null;
 
         const {value, label} = action;
 
@@ -74,7 +91,7 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                 </DialogHeader>
                 {['rename', 'delete', 'share'].includes(value) && (
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
-                        <Button onClick={handleCloseModals} className="modal-cancel-button">Cancel</Button>
+                        <Button onClick={closeAllModals} className="modal-cancel-button">Cancel</Button>
                         <Button onClick={handleAction} className="modal-submit-button ">
                             <p className="capitalize">{value}</p>
                             {isLoading && (
@@ -116,6 +133,12 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                                 key={item.value}
                                 className="shad-dropdown-item"
                                 onClick={() => {
+                                    if (item.value === "download") {
+                                        downloadFile(constructDownloadUrl(file.bucketFileId), file.name);
+                                        setIsDropdownOpen(false);
+                                        return;
+                                    }
+
                                     setAction(item);
 
                                     if([
@@ -128,31 +151,15 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                                     }
                                 }}
                             >
-                                {item.value === "download" ? (
-                                    <Link
-                                        href={constructDownloadUrl(file.bucketFileId)}
-                                        download={file.name}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Image
-                                            src={item.icon}
-                                            alt={item.label}
-                                            width={30}
-                                            height={30}
-                                        />
-                                        {item.label}
-                                    </Link>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Image
-                                            src={item.icon}
-                                            alt={item.label}
-                                            width={30}
-                                            height={30}
-                                        />
-                                        {item.label}
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-2 w-full">
+                                    <Image
+                                        src={item.icon}
+                                        alt={item.label}
+                                        width={30}
+                                        height={30}
+                                    />
+                                    {item.label}
+                                </div>
                             </DropdownMenuItem>
                         ))}
                     </DropdownMenuGroup>
