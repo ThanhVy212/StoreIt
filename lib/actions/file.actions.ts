@@ -4,7 +4,7 @@ import {createAdminClient} from "@/lib/appwrite";
 import {InputFile} from "node-appwrite/file";
 import {appwriteConfig} from "@/lib/appwrite/config";
 import {ID, Query} from "node-appwrite";
-import {constructFileUrl, getFileType, parseStringify} from "@/lib/utils";
+import {constructFileUrl, formatFileName, getFileType, parseStringify, sanitizeFileName} from "@/lib/utils";
 import {revalidatePath} from "next/cache";
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import {UserRow} from "@/types/db.types";
@@ -22,11 +22,14 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
             file: inputFile,
         });
 
+        const fileName = sanitizeFileName(bucketFile.name);
+        const {type, extension} = getFileType(fileName);
+
         const fileDocument = {
-            type: getFileType(bucketFile.name).type,
-            name: bucketFile.name,
+            type,
+            name: fileName,
             url: constructFileUrl(bucketFile.$id),
-            extension: getFileType(bucketFile.name).extension,
+            extension,
             size: bucketFile.sizeOriginal,
             owner: ownerId,
             accountId,
@@ -60,38 +63,49 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
     }
 }
 
-const createQueries = (currentUser: UserRow, types: string[], searchText: string, sort: string, limit?: number) => {
+const createQueries = (
+    currentUser: UserRow,
+    types: string[],
+    searchText: string,
+    sort: string,
+    limit?: number
+) => {
     const queries = [
         Query.or([
             Query.equal("owner", [currentUser.$id]),
             Query.contains("users", [currentUser.email]),
         ]),
+
+        Query.select([
+            "*",
+            "owner.*",
+        ]),
     ];
 
-    if(types.length >= 0) {
+    if (types.length > 0) {
         queries.push(Query.equal("type", types));
     }
 
-    if(searchText) {
+    if (searchText) {
         queries.push(Query.contains("name", searchText));
     }
 
-    if(sort) {
+    if (sort) {
         const [sortBy, orderBy] = sort.split("-");
 
         queries.push(
             orderBy === "asc"
                 ? Query.orderAsc(sortBy)
-                : Query.orderDesc(sortBy),
+                : Query.orderDesc(sortBy)
         );
     }
 
-    if(limit) {
+    if (limit) {
         queries.push(Query.limit(limit));
     }
 
     return queries;
-}
+};
 
 export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit}: GetFilesProps) => {
     const {tablesDB} = await createAdminClient();
@@ -117,3 +131,74 @@ export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-
         throw err;
     }
 }
+
+export const renameFile = async({fileId, name, extension, path}: RenameFileProps) => {
+    const {tablesDB} = await createAdminClient();
+
+    try {
+        const newName = formatFileName(name, extension);
+
+        const updatedFile = await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+            data: {
+                name: newName,
+            },
+        });
+
+        revalidatePath(path);
+        return parseStringify(updatedFile);
+    } catch (err) {
+        console.log('Failed to rename file', err);
+        throw err;
+    }
+}
+
+export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersProps) => {
+    const { tablesDB } = await createAdminClient();
+
+    try {
+        const updatedFile = await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+            data: {
+                users: emails,
+            },
+        });
+
+        revalidatePath(path);
+
+        return parseStringify(updatedFile);
+    } catch (err) {
+        console.log('Failed to update file users', err);
+        throw err;
+    }
+};
+
+export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) => {
+    const { tablesDB, storage } = await createAdminClient();
+
+    try {
+        await tablesDB.deleteRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+        });
+
+        await storage.deleteFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: bucketFileId,
+        });
+
+        revalidatePath(path);
+
+        return parseStringify({
+            status: "success",
+        });
+    } catch (err) {
+        console.log('Failed to delete file', err);
+        throw err;
+    }
+};

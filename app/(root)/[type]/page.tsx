@@ -2,6 +2,7 @@ import Sort from "@/components/Sort";
 import {getFiles} from "@/lib/actions/file.actions";
 import {FileRow} from "@/types/db.types";
 import {getFileTypesParams} from "@/lib/utils";
+import FileCard from "@/components/FileCard";
 
 const Page = async ({ params }: SearchParamProps) => {
     const type = ((await params)?.type as string) || "";
@@ -31,9 +32,7 @@ const Page = async ({ params }: SearchParamProps) => {
             {files.total > 0 ? (
                 <section className="file-list">
                     {files.rows.map((file: FileRow) => (
-                        <h1 key={file.$id} className="h1">
-                            {file.name}
-                        </h1>
+                        <FileCard key={file.$id} file={file} />
                     ))}
                 </section>
             ) : (

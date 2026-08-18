@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
               hostname: 'png.pngtree.com',
           }, {
               protocol: 'https',
+              hostname: 'fra.cloud.appwrite.io',
+          }, {
+              protocol: 'https',
               hostname: 'cloud.appwrite.io',
           }
       ]

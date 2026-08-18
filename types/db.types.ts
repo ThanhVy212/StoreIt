@@ -17,3 +17,9 @@ export type FileRow = Models.Row & {
     size?: number | null;
     users?: string[] | null;
 };
+
+export interface ShareInputProps {
+    file: FileRow;
+    onInputChange: React.Dispatch<React.SetStateAction<string[]>>;
+    onRemove: (email: string) => void;
+}

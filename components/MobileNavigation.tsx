@@ -37,7 +37,7 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
 
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger>
-                    <Image src="/assets/icons/menu.svg" alt="menu" width={30} height={30} />
+                    <Image src="/assets/icons/menu.svg" alt="menu" width={30} height={30} className="cursor-pointer"/>
                 </SheetTrigger>
                 <SheetContent className="shad-sheet h-screen px-3">
                     <SheetTitle>
