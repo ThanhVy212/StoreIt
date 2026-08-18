@@ -28,7 +28,7 @@ const FileCard = ({file}: {file: FileRow}) => {
 
                 <div className="flex flex-col items-end justify-between">
                     <ActionDropdown file={file}/>
-                    {file.size && (
+                    {file.size != null && (
                         <p className="body-1">{convertFileSize(file.size)}</p>
                     )}
                 </div>

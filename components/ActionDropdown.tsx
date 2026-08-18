@@ -55,24 +55,22 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
     const handleAction = async () => {
         if(!action) return;
         setIsLoading(true);
-        let success: any = false;
-
         const actions = {
             rename: () => renameFile({fileId: file.$id, name: name.trim(), extension: file.extension!, path}),
             share: () => updateFileUsers({fileId: file.$id, emails, path}),
             delete: () => deleteFile({fileId: file.$id, bucketFileId: file.bucketFileId, path}),
         }
-
-        success = await actions[action.value as keyof typeof actions]();
-
-        if (success) {
-            if (action.value === "rename" && success?.name) {
-                setName(removeExtension(success.name));
+        try {
+            const success = await actions[action.value as keyof typeof actions]();
+            if (success) {
+                if (action.value === "rename" && success?.name) {
+                    setName(removeExtension(success.name));
+                }
+                closeAllModals();
             }
-            closeAllModals();
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     }
 
     const handleRemoveUser = async (email: string) => {
@@ -168,9 +166,10 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                                     if (item.value === "rename") {
                                         setName(removeExtension(file.name ?? ""));
                                     }
-
+                                    if (item.value === "share") {
+                                        setEmails(file.users ?? []);
+                                    }
                                     setAction(item);
-
                                     if([
                                         'rename',
                                         'share',
