@@ -22,7 +22,7 @@ const FileCard = ({file}: {file: FileRow}) => {
                         extension={file.extension ?? ""}
                         url={fileUrl}
                         className="!size-20"
-                        imageClassName={file.type === "image" ? "!size-full" : "!size-11"}
+                        imageClassName={file.type === "image" || file.type === "video" ? "!size-full" : "!size-11"}
                     />
                 </Link>
 

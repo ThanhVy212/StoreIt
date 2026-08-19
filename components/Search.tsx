@@ -42,7 +42,6 @@ const Search = () => {
             setResults(files.rows);
             setOpen(true);
         }
-        console.log(results);
 
         fetchFiles();
     }, [debouncedQuery]);
