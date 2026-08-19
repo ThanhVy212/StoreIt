@@ -1,8 +1,45 @@
-import React from 'react'
+'use client';
+
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {usePathname, useRouter} from "next/navigation";
+import {sortTypes} from "@/constants";
+
+
 
 const Sort = () => {
+    const router = useRouter();
+    const path = usePathname();
+
+    const handleSort = (value: string | null) => {
+        router.push(`${path}?sort=${value}`);
+    }
+
     return (
-        <div>Sort</div>
+        <Select items={sortTypes} onValueChange={handleSort} defaultValue={sortTypes[0].value}>
+            <SelectTrigger className="sort-select">
+                <SelectValue placeholder={sortTypes[0].label} />
+            </SelectTrigger>
+            <SelectContent className="sort-select-content">
+                <SelectGroup>
+                    {sortTypes.map((item) => (
+                        <SelectItem
+                            key={item.label}
+                            className="shad-select-item"
+                            value={item.value}
+                        >
+                            {item.label}
+                        </SelectItem>
+                    ))}
+                </SelectGroup>
+            </SelectContent>
+    </Select>
     )
 }
 export default Sort
