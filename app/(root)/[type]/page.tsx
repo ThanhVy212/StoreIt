@@ -1,8 +1,10 @@
 import Sort from "@/components/Sort";
-import {getFiles} from "@/lib/actions/file.actions";
-import {FileRow} from "@/types/db.types";
-import {getFileTypesParams} from "@/lib/utils";
+import { getFiles } from "@/lib/actions/file.actions";
+import { FileRow } from "@/types/db.types";
+import { convertFileSize, getFileTypesParams } from "@/lib/utils";
 import FileCard from "@/components/FileCard";
+
+export const dynamic = "force-dynamic";
 
 const Page = async ({ searchParams, params }: SearchParamProps) => {
     const type = ((await params)?.type as string) || "";
@@ -13,6 +15,9 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
 
     const files = await getFiles({ types, searchText, sort });
 
+    // Calculate total size for files in this category
+    const totalSize = files?.rows?.reduce((acc: number, file: FileRow) => acc + (file.size || 0), 0) || 0;
+
     return (
         <div className="page-container">
             <section className="w-full">
@@ -20,7 +25,7 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
 
                 <div className="total-size-section">
                     <p className="body-1">
-                        Total: <span className="h5">0 MB</span>
+                        Total: <span className="h5">{convertFileSize(totalSize)}</span>
                     </p>
 
                     <div className="sort-container">
@@ -30,7 +35,6 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
                 </div>
             </section>
 
-        {/* todo: Render the files  */}
             {files.total > 0 ? (
                 <section className="file-list">
                     {files.rows.map((file: FileRow) => (
@@ -40,8 +44,8 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
             ) : (
                 <p className="empty-list">No files uploaded</p>
             )}
-
         </div>
-    )
-}
-export default Page
+    );
+};
+
+export default Page;

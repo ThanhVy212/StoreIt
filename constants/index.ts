@@ -15,9 +15,14 @@ export const navItems = [
         url: '/images',
     },
     {
-        name: 'Media',
+        name: 'Video',
         icon: '/assets/icons/video.svg',
-        url: '/media',
+        url: '/video',
+    },
+    {
+        name: 'Audio',
+        icon: '/assets/icons/audio.svg',
+        url: '/audio',
     },
     {
         name: 'Others',

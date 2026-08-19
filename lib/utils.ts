@@ -264,32 +264,36 @@ export const getUsageSummary = (totalSpace: any) => {
   return [
     {
       title: 'Documents',
-      size: totalSpace.document.size,
-      latestDate: totalSpace.document.latestDate,
+      size: totalSpace.document?.size || 0,
+      latestDate: totalSpace.document?.latestDate || '',
       icon: '/assets/icons/file-document-light.svg',
       url: '/documents',
     },
     {
       title: 'Images',
-      size: totalSpace.image.size,
-      latestDate: totalSpace.image.latestDate,
+      size: totalSpace.image?.size || 0,
+      latestDate: totalSpace.image?.latestDate || '',
       icon: '/assets/icons/file-image-light.svg',
       url: '/images',
     },
     {
-      title: 'Media',
-      size: totalSpace.video.size + totalSpace.audio.size,
-      latestDate:
-          totalSpace.video.latestDate > totalSpace.audio.latestDate
-              ? totalSpace.video.latestDate
-              : totalSpace.audio.latestDate,
+      title: 'Video',
+      size: totalSpace.video?.size || 0,
+      latestDate: totalSpace.video?.latestDate || '',
       icon: '/assets/icons/file-video-light.svg',
-      url: '/media',
+      url: '/video',
+    },
+    {
+      title: 'Audio',
+      size: totalSpace.audio?.size || 0,
+      latestDate: totalSpace.audio?.latestDate || '',
+      icon: '/assets/icons/file-audio-light.svg',
+      url: '/audio',
     },
     {
       title: 'Others',
-      size: totalSpace.other.size,
-      latestDate: totalSpace.other.latestDate,
+      size: totalSpace.other?.size || 0,
+      latestDate: totalSpace.other?.latestDate || '',
       icon: '/assets/icons/file-other-light.svg',
       url: '/others',
     },
@@ -304,6 +308,12 @@ export const getFileTypesParams = (type: string) => {
       return ['image'];
     case 'media':
       return ['video', 'audio'];
+    case 'video':
+    case 'videos':
+      return ['video'];
+    case 'audio':
+    case 'audios':
+      return ['audio'];
     case 'others':
       return ['other'];
     default:

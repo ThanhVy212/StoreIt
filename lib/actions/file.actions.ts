@@ -68,14 +68,18 @@ const createQueries = (
     types: string[],
     searchText: string,
     sort: string,
-    limit?: number
+    limit?: number,
+    onlyOwner?: boolean
 ) => {
-    const queries = [
-        Query.or([
+    const userQuery = onlyOwner
+        ? Query.equal("owner", [currentUser.$id])
+        : Query.or([
             Query.equal("owner", [currentUser.$id]),
             Query.contains("users", [currentUser.email]),
-        ]),
+        ]);
 
+    const queries = [
+        userQuery,
         Query.select([
             "*",
             "owner.*",
@@ -107,7 +111,7 @@ const createQueries = (
     return queries;
 };
 
-export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit}: GetFilesProps) => {
+export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit, onlyOwner}: GetFilesProps) => {
     const {tablesDB} = await createAdminClient();
 
     try {
@@ -117,7 +121,7 @@ export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-
             throw new Error("No user found");
         }
 
-        const queries = createQueries(currentUser, types, searchText, sort, limit);
+        const queries = createQueries(currentUser, types, searchText, sort, limit, onlyOwner);
 
         const files = await tablesDB.listRows({
             databaseId: appwriteConfig.databaseId,
@@ -200,5 +204,62 @@ export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) 
     } catch (err) {
         console.log('Failed to delete file', err);
         throw err;
+    }
+};
+
+export const getTotalSpaceUsed = async () => {
+    try {
+        const { tablesDB } = await createAdminClient();
+        const currentUser = await getCurrentUser();
+        if (!currentUser) throw new Error("User is not authenticated.");
+
+        const files = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            queries: [
+                Query.equal("owner", [currentUser.$id]),
+            ],
+        });
+
+        const totalSpace = {
+            image: { size: 0, latestDate: "" },
+            document: { size: 0, latestDate: "" },
+            video: { size: 0, latestDate: "" },
+            audio: { size: 0, latestDate: "" },
+            other: { size: 0, latestDate: "" },
+            used: 0,
+            all: 2 * 1024 * 1024 * 1024, // 2GB in bytes
+        };
+
+        files.rows.forEach((file: any) => {
+            const fileType = file.type as FileType;
+            const fileSize = file.size || 0;
+
+            if (totalSpace[fileType]) {
+                totalSpace[fileType].size += fileSize;
+
+                if (
+                    !totalSpace[fileType].latestDate ||
+                    new Date(file.$updatedAt) > new Date(totalSpace[fileType].latestDate)
+                ) {
+                    totalSpace[fileType].latestDate = file.$updatedAt;
+                }
+            }
+
+            totalSpace.used += fileSize;
+        });
+
+        return parseStringify(totalSpace);
+    } catch (error) {
+        console.log("Error calculating total space used:", error);
+        return {
+            image: { size: 0, latestDate: "" },
+            document: { size: 0, latestDate: "" },
+            video: { size: 0, latestDate: "" },
+            audio: { size: 0, latestDate: "" },
+            other: { size: 0, latestDate: "" },
+            used: 0,
+            all: 2 * 1024 * 1024 * 1024,
+        };
     }
 };
