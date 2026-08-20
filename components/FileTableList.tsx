@@ -103,8 +103,8 @@ const FileTableList = ({
                 <span className="file-table-cell file-table-cell-check" />
                 <span className="file-table-cell">Name</span>
                 <span className="file-table-cell">Owner</span>
-                <span className="file-table-cell">Date modified</span>
-                <span className="file-table-cell">File size</span>
+                <span className="file-table-cell file-table-header-date">Date modified</span>
+                <span className="file-table-cell file-table-header-size">File size</span>
                 <span className="file-table-cell file-table-cell-actions" />
             </div>
 

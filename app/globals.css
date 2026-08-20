@@ -299,7 +299,8 @@
 .file-table-header,
 .file-table-row {
   display: grid;
-  grid-template-columns: 28px minmax(180px, 1.8fr) minmax(120px, 0.85fr) minmax(150px, 1fr) 110px 40px;
+  grid-template-columns: 28px minmax(180px, 1.8fr) minmax(120px, 1.4fr) minmax(150px, 0.8fr) 110px 40px;
+
   @apply min-w-[760px] items-center gap-3 border-b border-light-300 px-4;
 }
 
@@ -358,8 +359,38 @@
 }
 
 @media (max-width: 768px) {
+  .file-table {
+    @apply w-full overflow-auto;
+  }
+
+  .file-table-header,
+  .file-table-row {
+    grid-template-columns:
+      24px
+      minmax(0, 1fr)
+      28px
+      64px
+      32px;
+
+    width: 100%;
+    min-width: 0;
+
+    @apply gap-2 px-3;
+  }
+
+  .file-table-cell-date,
+  .file-table-header-date,
   .file-table-owner-email {
     @apply hidden;
+  }
+
+  .file-table-cell-size,
+  .file-table-header-size {
+    @apply block text-right text-xs;
+  }
+
+  .file-table-cell-owner {
+    @apply justify-center;
   }
 }
 
@@ -459,7 +490,7 @@
 }
 
 .file-details-label {
-  @apply w-[30%] text-light-100 text-sm leading-5;
+  @apply w-[20%] text-light-100 text-sm leading-5;
 }
 
 .file-details-value {

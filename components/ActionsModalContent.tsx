@@ -17,10 +17,23 @@ const ImageThumbnail = ({file}: {file: FileRow}) => (
     </div>
 )
 
-const DetailRow = ({label, value}: {label: string, value: string}) => (
+const DetailRow = ({label, value, avatar}: {label: string, value: string, avatar?: string}) => (
     <div className="flex gap-2">
         <p className="file-details-label text-left shrink-0">{label}</p>
-        <p className="file-details-value text-left truncate" title={value}>{value}</p>
+        {avatar ? (
+            <>
+                <Image
+                    src={avatar}
+                    alt="avatar"
+                    width={24}
+                    height={24}
+                    className="file-table-owner-avatar"
+                />
+                <p className="file-details-value text-left truncate" title={value}>{value}</p>
+            </>
+        ):(
+            <p className="file-details-value text-left truncate" title={value}>{value}</p>
+        )}
     </div>
 )
 
@@ -31,8 +44,9 @@ export const FileDetails = ({file}: {file: FileRow}) => {
             <div className="space-y-4 px-2 pt-2">
                 <DetailRow label="Format:" value={file.extension ?? "—"} />
                 <DetailRow label="Size:" value={file.size != null ? convertFileSize(file.size) : "—"} />
-                <DetailRow label="Owner:" value={file.owner?.fullName ?? "—"} />
+                <DetailRow label="Upload:" value={file.owner?.fullName ?? "—"} />
                 <DetailRow label="Last edit:" value={formatDateTime(file.$updatedAt)} />
+                <DetailRow label="Owner:" value={file.owner?.email ?? "—"} avatar={file.owner?.avatar} />
             </div>
         </>
     )
