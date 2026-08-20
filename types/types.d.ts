@@ -21,6 +21,14 @@ declare interface UploadFileProps {
     accountId: string;
     path: string;
 }
+declare interface SaveFileRecordProps {
+    bucketFileId: string;
+    name: string;
+    size: number;
+    ownerId: string;
+    accountId: string;
+    path: string;
+}
 declare interface GetFilesProps {
     types?: FileType[];
     searchText?: string;

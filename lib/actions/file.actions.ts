@@ -63,6 +63,58 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
     }
 }
 
+export const saveFileRecord = async ({
+    bucketFileId,
+    name,
+    size,
+    ownerId,
+    accountId,
+    path,
+}: SaveFileRecordProps) => {
+    const { storage, tablesDB } = await createAdminClient();
+
+    try {
+        const fileName = sanitizeFileName(name);
+        const { type, extension } = getFileType(fileName);
+
+        const fileDocument = {
+            type,
+            name: fileName,
+            url: constructFileUrl(bucketFileId),
+            extension,
+            size,
+            owner: ownerId,
+            accountId,
+            users: [],
+            bucketFileId,
+        };
+
+        const newFile = await tablesDB
+            .createRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.filesTableId,
+                rowId: ID.unique(),
+                data: fileDocument,
+            })
+            .catch(async (err: unknown) => {
+                await storage.deleteFile({
+                    bucketId: appwriteConfig.bucketId,
+                    fileId: bucketFileId,
+                });
+
+                console.log("Failed to create file row");
+                throw err;
+            });
+
+        revalidatePath(path);
+
+        return parseStringify(newFile);
+    } catch (err) {
+        console.log('Failed to save file record', err);
+        throw err;
+    }
+}
+
 const createQueries = (
     currentUser: UserRow,
     types: string[],

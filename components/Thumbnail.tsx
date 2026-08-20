@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { cn, getFileIcon } from "@/lib/utils";
 import Image from "next/image";
 
-const Thumbnail = ({ type, extension, url = '', imageClassName, className }: ThumbnailProps) => {
+const Thumbnail = React.memo(({ type, extension, url = '', imageClassName, className }: ThumbnailProps) => {
     const [hasError, setHasError] = useState(false);
     const isImage = type === 'image' && extension !== "svg";
     const isVideo = type === 'video';
@@ -64,6 +64,8 @@ const Thumbnail = ({ type, extension, url = '', imageClassName, className }: Thu
             )}
         </figure>
     );
-};
+});
+
+Thumbnail.displayName = 'Thumbnail';
 
 export default Thumbnail;

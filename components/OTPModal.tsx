@@ -21,6 +21,7 @@ import React, {useState, useEffect} from "react";
 import Image from "next/image";
 import {useRouter} from "next/navigation";
 import {verifySecret, sendEmailOTP} from "@/lib/actions/user.actions";
+import {toast} from "@/components/ui/toast";
 
 
 const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
@@ -28,7 +29,8 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
     const [isOpen, setIsOpen] = useState(true);
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [cooldown, setCooldown] = useState(60);
+    const [cooldown, setCooldown] = useState(30);
+    const [currentAccountId, setCurrentAccountId] = useState(accountId);
 
     useEffect(() => {
         if (cooldown <= 0) return;
@@ -40,26 +42,87 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
 
     const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
+        if (!password || password.length < 6) {
+            toast.add({
+                type: "warning",
+                description: "Please enter the complete 6-digit OTP code.",
+            });
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            const sessionId = await verifySecret( {accountId, password } );
+            const result = await verifySecret({ accountId: currentAccountId, password });
 
-            if(sessionId) router.push("/");
-        }catch (err) {
+            if (result?.sessionId) {
+                toast.add({
+                    type: "success",
+                    description: "Signed in successfully!",
+                });
+                setIsOpen(false);
+                router.push("/");
+            } else {
+                const errStr = (result?.error || "").toLowerCase();
+                const isExpired = errStr.includes("expire") || errStr.includes("token");
+
+                if (isExpired) {
+                    toast.add({
+                        type: "error",
+                        description: "The OTP code has expired. Please request a new one.",
+                    });
+                } else {
+                    toast.add({
+                        type: "error",
+                        description: "Invalid OTP code. Please check and try again.",
+                    });
+                }
+            }
+        } catch (err: unknown) {
             console.log("Failed to verify OTP", err);
-        }
+            const errStr = (err instanceof Error ? err.message : "").toLowerCase();
+            const isExpired = errStr.includes("expire") || errStr.includes("token");
 
-        setIsLoading(false);
+            if (isExpired) {
+                toast.add({
+                    type: "error",
+                    description: "The OTP code has expired. Please request a new one.",
+                });
+            } else {
+                toast.add({
+                    type: "error",
+                    description: "Failed to verify OTP. Please try again.",
+                });
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleResendOtp = async () => {
         if (cooldown > 0) return;
         try {
-            await sendEmailOTP({ email });
-            setCooldown(60);
+            const newAccountId = await sendEmailOTP({ email });
+            if (newAccountId) {
+                setCurrentAccountId(newAccountId);
+                setPassword('');
+                setCooldown(30);
+                toast.add({
+                    type: "success",
+                    description: "A new OTP code has been sent to your email.",
+                });
+            } else {
+                toast.add({
+                    type: "error",
+                    description: "Failed to resend OTP. Please try again.",
+                });
+            }
         } catch (err) {
             console.log("Failed to resend OTP", err);
+            toast.add({
+                type: "error",
+                description: "Failed to resend OTP. Please try again.",
+            });
         }
     };
 
@@ -77,7 +140,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                         className="otp-close-button"
                     />
                     <AlertDialogDescription className="subtitle-2 text-center text-light-100">
-                        We've seen a code to <span className="pl-1 text-brand">{email}</span>
+                        We&apos;ve sent a code to <span className="pl-1 text-brand">{email}</span>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
@@ -113,7 +176,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                         </AlertDialogAction>
 
                         <div className="subtitle-2 mt-2 text-center text-light-100">
-                            Didn't get a code?
+                            Didn&apos;t get a code?
                             <Button
                                 type="button"
                                 variant="link"

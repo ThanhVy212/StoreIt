@@ -39,15 +39,19 @@ export const sendEmailOTP = async ({ email }: { email: string }) => {
 };
 
 export const createAccount = async ({fullName, email,}: { fullName: string; email: string; }) => {
-    const existingUser = await getUserByEmail(email);
+    try {
+        const existingUser = await getUserByEmail(email);
 
-    const accountId = await sendEmailOTP({ email });
+        if (existingUser) {
+            return parseStringify({ accountId: null, error: "An account with this email already exists. Please sign in." });
+        }
 
-    if (!accountId) {
-        throw new Error("Failed to send an OTP");
-    }
+        const accountId = await sendEmailOTP({ email });
 
-    if (!existingUser) {
+        if (!accountId) {
+            return parseStringify({ accountId: null, error: "Failed to send an OTP. Please try again." });
+        }
+
         const { tablesDB } = await createAdminClient();
 
         await tablesDB.createRow({
@@ -60,9 +64,15 @@ export const createAccount = async ({fullName, email,}: { fullName: string; emai
                 avatar: avatarPlaceholderUrl,
             },
         });
-    }
 
-    return parseStringify({ accountId });
+        return parseStringify({ accountId });
+    } catch (err) {
+        console.log("Failed to create account:", err);
+        return parseStringify({
+            accountId: null,
+            error: err instanceof Error ? err.message : "Failed to create account.",
+        });
+    }
 };
 
 export const verifySecret = async ({ accountId, password }: {accountId: string, password: string}) => {
@@ -84,25 +94,25 @@ export const verifySecret = async ({ accountId, password }: {accountId: string, 
         return parseStringify({ sessionId: session.$id });
     } catch (err) {
         console.log("Failed to verify OTP:", err);
-        throw err;
+        return parseStringify({
+            sessionId: null,
+            error: err instanceof Error ? err.message : "Failed to verify OTP",
+        });
     }
 }
 
 export const getCurrentUser = async () => {
     try {
-        const { tablesDB, account } = await createSessionClient();
+        const { account } = await createSessionClient();
 
         const result = await account.get();
 
-        const user = await tablesDB.getRow({
-            databaseId: appwriteConfig.databaseId,
-            tableId: appwriteConfig.usersTableId,
-            rowId: result.$id,
-        });
+        const user = await getUserByEmail(result.email);
+        if (!user) return null;
 
         return parseStringify({
             ...user,
-            accountId: user.$id,
+            accountId: result.$id,
         });
     } catch (err) {
         console.log("Failed to get current user:", err);
@@ -130,14 +140,17 @@ export const signInUser = async ({email}: {email: string}) => {
         const existingUser = await getUserByEmail(email);
 
         if(existingUser) {
-            await sendEmailOTP({ email });
-            return parseStringify({ accountId: existingUser.$id });
+            const accountId = await sendEmailOTP({ email });
+            return parseStringify({ accountId });
         }
 
-        return parseStringify({ accountId: null, errors: 'User not found' });
+        return parseStringify({ accountId: null, error: "No account found with this email. Please sign up first." });
 
     } catch (err) {
         console.log("Failed to Sign in user:", err);
-        throw err;
+        return parseStringify({
+            accountId: null,
+            error: err instanceof Error ? err.message : "Failed to sign in.",
+        });
     }
-}
+}

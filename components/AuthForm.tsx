@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import {createAccount, signInUser} from "@/lib/actions/user.actions";
 import OTPModal from "@/components/OTPModal";
+import { toast } from "@/components/ui/toast";
 
 type FormType = "sign-in" | "sign-up";
 
@@ -71,17 +72,30 @@ const AuthForm = ({ type }: { type: FormType }) => {
           email: values.email,
         }) : await signInUser({email: values.email});
 
-        setAccountId(user.accountId);
+        if (user?.error) {
+          setErrorMessage(user.error);
+          return;
+        }
+
+        if (user?.accountId) {
+          setAccountId(user.accountId);
+          toast.add({
+            type: "success",
+            description: type === "sign-up"
+              ? "Account created! An OTP has been sent to your email."
+              : "OTP sent successfully! Please check your email.",
+          });
+        } else {
+          const fallbackError = type === "sign-up" ? "Failed to create account." : "Failed to sign in.";
+          setErrorMessage(fallbackError);
+        }
 
     } catch (error) {
-      setErrorMessage(
-          error instanceof Error ? error.message : "Something went wrong."
-      );
+      const msg = error instanceof Error ? error.message : "Something went wrong.";
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }
-
-
   };
 
   return (
@@ -236,7 +250,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
         </CardContent>
       </Card>
 
-      {accountId && <OTPModal email={form.getValues("email")} accountId={accountId} />}
+      {accountId && <OTPModal key={accountId} email={form.getValues("email")} accountId={accountId} />}
     </>
   );
 };

@@ -1004,6 +1004,14 @@
 .error-toast {
   border-radius: 10px !important;
   background-color: var(--color-red) !important;
+  color: #ffffff !important;
+}
+
+.error-toast [data-slot="toast-description"],
+.error-toast [data-slot="toast-title"],
+.error-toast [data-slot="toast-close"],
+.error-toast [data-slot="toast-icon"] svg {
+  color: #ffffff !important;
 }
 
 /* =========================================================
