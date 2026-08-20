@@ -34,7 +34,20 @@ declare interface GetFilesProps {
     searchText?: string;
     sort?: string;
     limit?: number;
+    page?: number;
+    fetchAll?: boolean;
     onlyOwner?: boolean;
+    trashed?: boolean;
+}
+
+declare interface TrashFileProps {
+    fileId: string;
+    path: string;
+}
+
+declare interface TrashFilesProps {
+    fileIds: string[];
+    path: string;
 }
 declare interface RenameFileProps {
     fileId: string;
@@ -50,6 +63,14 @@ declare interface UpdateFileUsersProps {
 declare interface DeleteFileProps {
     fileId: string;
     bucketFileId: string;
+    path: string;
+}
+
+declare interface DeleteFilesProps {
+    files: {
+        fileId: string;
+        bucketFileId: string
+    }[];
     path: string;
 }
 
@@ -79,4 +100,3 @@ declare interface ThumbnailProps {
     className?: string;
     imageClassName?: string;
 }
-

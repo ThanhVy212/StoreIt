@@ -20,13 +20,14 @@ import {
 import React, {useEffect, useState} from 'react';
 import {FileRow} from "@/types/db.types";
 import Image from "next/image";
-import {actionsDropdownItems} from "@/constants";
+import {actionsDropdownItems, trashActionsDropdownItems} from "@/constants";
 import {addExtension, constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import {deleteFile, renameFile, updateFileUsers} from "@/lib/actions/file.actions";
+import {deleteFile, moveFileToTrash, renameFile, restoreFile, updateFileUsers} from "@/lib/actions/file.actions";
 import {usePathname} from "next/navigation";
 import {FileDetails, ShareInput} from "@/components/ActionsModalContent";
+import {toast} from "@/components/ui/toast";
 
 
 
@@ -39,6 +40,8 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
     const [emails, setEmails] = useState<string[]>([]);
 
     const path = usePathname();
+    const isTrashed = Boolean(file.trashed);
+    const menuItems = isTrashed ? trashActionsDropdownItems : actionsDropdownItems;
 
     useEffect(() => {
         setName(removeExtension(file.name ?? ""));
@@ -52,26 +55,45 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
         setEmails([]);
     }
 
-    const handleAction = async () => {
-        if(!action) return;
+    const handleAction = async (selectedAction?: ActionType | null) => {
+        const currentAction = selectedAction ?? action;
+        if (!currentAction) return;
+
         setIsLoading(true);
         const actions = {
             rename: () => renameFile({fileId: file.$id, name: name.trim(), extension: file.extension!, path}),
             share: () => updateFileUsers({fileId: file.$id, emails, path}),
+            trash: () => moveFileToTrash({fileId: file.$id, path}),
+            restore: () => restoreFile({fileId: file.$id, path}),
             delete: () => deleteFile({fileId: file.$id, bucketFileId: file.bucketFileId, path}),
-        }
+        };
+
         try {
-            const success = await actions[action.value as keyof typeof actions]();
+            const success = await actions[currentAction.value as keyof typeof actions]();
             if (success) {
-                if (action.value === "rename" && success?.name) {
+                if (currentAction.value === "rename" && success?.name) {
                     setName(removeExtension(success.name));
+                }
+                if (currentAction.value === "trash") {
+                    toast.add({ type: "success", description: "File moved to trash." });
+                }
+                if (currentAction.value === "restore") {
+                    toast.add({ type: "success", description: "File restored." });
+                }
+                if (currentAction.value === "delete") {
+                    toast.add({ type: "success", description: "File deleted permanently." });
                 }
                 closeAllModals();
             }
+        } catch {
+            toast.add({
+                type: "error",
+                description: "Something went wrong. Please try again.",
+            });
         } finally {
             setIsLoading(false);
         }
-    }
+    };
 
     const handleRemoveUser = async (email: string) => {
         const updatedEmails = emails.filter((e) => e !== email);
@@ -108,16 +130,17 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                     )}
                     {value === "delete" && (
                         <p className="delete-confirmation">
-                            Are you sure you want to delete {` `}
+                            Permanently delete {` `}
                             <span className="delete-file-name">{addExtension(name, file.extension!)}</span>?
+                            This cannot be undone.
                         </p>
                     )}
                 </DialogHeader>
                 {['rename', 'delete', 'share'].includes(value) && (
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
                         <Button onClick={closeAllModals} className="modal-cancel-button">Cancel</Button>
-                        <Button onClick={handleAction} className="modal-submit-button ">
-                            <p className="capitalize">{value}</p>
+                        <Button onClick={() => void handleAction()} className="modal-submit-button ">
+                            <p className="capitalize">{value === "delete" ? "Delete forever" : value}</p>
                             {isLoading && (
                                 <Image src="/assets/icons/loader.svg"
                                        alt="loader"
@@ -152,7 +175,7 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                        {actionsDropdownItems.map((item) => (
+                        {menuItems.map((item) => (
                             <DropdownMenuItem
                                 key={item.value}
                                 className="shad-dropdown-item"
@@ -169,7 +192,15 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                                     if (item.value === "share") {
                                         setEmails(file.users ?? []);
                                     }
+
                                     setAction(item);
+
+                                    if (item.value === "trash" || item.value === "restore") {
+                                        setIsDropdownOpen(false);
+                                        void handleAction(item);
+                                        return;
+                                    }
+
                                     if([
                                         'rename',
                                         'share',

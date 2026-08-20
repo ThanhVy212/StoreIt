@@ -9,7 +9,6 @@ import {revalidatePath} from "next/cache";
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import {UserRow} from "@/types/db.types";
 
-
 export const uploadFile = async ({file, ownerId, accountId, path}: UploadFileProps) => {
     const { storage, tablesDB } = await createAdminClient();
 
@@ -35,6 +34,7 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
             accountId,
             users: [],
             bucketFileId: bucketFile.$id,
+            trashed: false,
         }
 
         const newFile = await tablesDB
@@ -87,6 +87,7 @@ export const saveFileRecord = async ({
             accountId,
             users: [],
             bucketFileId,
+            trashed: false,
         };
 
         const newFile = await tablesDB
@@ -121,7 +122,9 @@ const createQueries = (
     searchText: string,
     sort: string,
     limit?: number,
-    onlyOwner?: boolean
+    page?: number,
+    onlyOwner?: boolean,
+    trashed = false
 ) => {
     const userQuery = onlyOwner
         ? Query.equal("owner", [currentUser.$id])
@@ -132,6 +135,7 @@ const createQueries = (
 
     const queries = [
         userQuery,
+        Query.equal("trashed", [trashed]),
         Query.select([
             "*",
             "owner.*",
@@ -158,12 +162,18 @@ const createQueries = (
 
     if (limit) {
         queries.push(Query.limit(limit));
+
+        if (page && page > 1) {
+            queries.push(Query.offset((page - 1) * limit));
+        }
     }
 
     return queries;
 };
 
-export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit, onlyOwner}: GetFilesProps) => {
+const FILES_BATCH_SIZE = 100;
+
+export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit, page = 1, fetchAll, onlyOwner, trashed = false}: GetFilesProps) => {
     const {tablesDB} = await createAdminClient();
 
     try {
@@ -173,15 +183,59 @@ export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-
             throw new Error("No user found");
         }
 
-        const queries = createQueries(currentUser, types, searchText, sort, limit, onlyOwner);
+        const listFiles = (queryLimit?: number, queryPage?: number) =>
+            tablesDB.listRows({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.filesTableId,
+                queries: createQueries(
+                    currentUser,
+                    types,
+                    searchText,
+                    sort,
+                    queryLimit,
+                    queryPage,
+                    onlyOwner,
+                    trashed
+                ),
+            });
 
-        const files = await tablesDB.listRows({
-            databaseId: appwriteConfig.databaseId,
-            tableId: appwriteConfig.filesTableId,
-            queries,
+        if (fetchAll) {
+            const allRows = [];
+            let currentPage = 1;
+            let totalCount = 0;
+
+            while (true) {
+                const batch = await listFiles(FILES_BATCH_SIZE, currentPage);
+                totalCount = batch.total;
+                allRows.push(...(batch.rows ?? []));
+
+                if (allRows.length >= totalCount || (batch.rows?.length ?? 0) < FILES_BATCH_SIZE) {
+                    break;
+                }
+
+                currentPage += 1;
+            }
+
+            return parseStringify({
+                rows: allRows,
+                total: totalCount,
+            });
+        }
+
+        const files = await listFiles(limit, page);
+        const totalCount = files.total;
+
+        return parseStringify({
+            ...files,
+            pagination: limit
+                ? {
+                    page,
+                    limit,
+                    total: totalCount,
+                    totalPages: Math.ceil(totalCount / limit),
+                }
+                : undefined,
         });
-
-        return parseStringify(files);
     } catch (err) {
         console.log('Failed to get files', err);
         throw err;
@@ -233,6 +287,63 @@ export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersPro
     }
 };
 
+const setFilesTrashed = async (fileIds: string[], trashed: boolean, path: string) => {
+    const { tablesDB } = await createAdminClient();
+
+    await Promise.all(
+        fileIds.map((fileId) =>
+            tablesDB.updateRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.filesTableId,
+                rowId: fileId,
+                data: { trashed },
+            })
+        )
+    );
+
+    revalidatePath(path);
+    revalidatePath("/trash");
+    revalidatePath("/");
+
+    return parseStringify({ status: "success" });
+};
+
+export const moveFileToTrash = async ({ fileId, path }: TrashFileProps) => {
+    try {
+        return await setFilesTrashed([fileId], true, path);
+    } catch (err) {
+        console.log("Failed to move file to trash", err);
+        throw err;
+    }
+};
+
+export const moveFilesToTrash = async ({ fileIds, path }: TrashFilesProps) => {
+    try {
+        return await setFilesTrashed(fileIds, true, path);
+    } catch (err) {
+        console.log("Failed to move files to trash", err);
+        throw err;
+    }
+};
+
+export const restoreFile = async ({ fileId, path }: TrashFileProps) => {
+    try {
+        return await setFilesTrashed([fileId], false, path);
+    } catch (err) {
+        console.log("Failed to restore file", err);
+        throw err;
+    }
+};
+
+export const restoreFiles = async ({ fileIds, path }: TrashFilesProps) => {
+    try {
+        return await setFilesTrashed(fileIds, false, path);
+    } catch (err) {
+        console.log("Failed to restore files", err);
+        throw err;
+    }
+};
+
 export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) => {
     const { tablesDB, storage } = await createAdminClient();
 
@@ -255,6 +366,33 @@ export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) 
         });
     } catch (err) {
         console.log('Failed to delete file', err);
+        throw err;
+    }
+};
+
+export const deleteFiles = async ({files, path,}: DeleteFilesProps) => {
+    const { tablesDB, storage } = await createAdminClient();
+
+    try {
+        const deletePromises = files.map(async ({ fileId, bucketFileId }) => {
+            await tablesDB.deleteRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.filesTableId,
+                rowId: fileId,
+            });
+
+            await storage.deleteFile({
+                bucketId: appwriteConfig.bucketId,
+                fileId: bucketFileId,
+            });
+        });
+
+        await Promise.all(deletePromises);
+        revalidatePath(path);
+
+        return parseStringify({ status: "success" });
+    } catch (err) {
+        console.log('Failed to delete files', err);
         throw err;
     }
 };
