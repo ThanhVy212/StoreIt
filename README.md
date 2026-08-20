@@ -44,41 +44,6 @@ A robust, full-stack cloud storage and file management web application built wit
 
 ---
 
-## 📂 Project Structure
-
-```text
-├── app/
-│   ├── (auth)/             # Authentication routes (sign-in, sign-up, layout)
-│   ├── (root)/             # Protected application routes (dashboard, [type], layout)
-│   ├── favicon.ico         # App favicon
-│   ├── globals.css         # Global Tailwind CSS styles
-│   └── layout.tsx          # Root layout
-├── components/             # Reusable UI & business logic components
-│   ├── ui/                 # Shadcn UI base components (dialog, dropdown, input, etc.)
-│   ├── ActionDropdown.tsx  # File action dropdown menu (Rename, Share, Delete, etc.)
-│   ├── ActionsModalContent.tsx # Modal dialogs for file operations
-│   ├── AuthForm.tsx        # Authentication form for login and registration
-│   ├── Chart.tsx           # Storage capacity visualization chart
-│   ├── FileCard.tsx        # Card display for individual files
-│   ├── FileUploader.tsx    # Drag-and-drop file upload component
-│   ├── Header.tsx          # App header with search and user controls
-│   ├── MobileNavigation.tsx# Mobile slide-out navigation
-│   ├── OTPModal.tsx        # One-time passcode verification modal
-│   ├── Search.tsx          # Debounced search bar
-│   ├── Sidebar.tsx         # Desktop sidebar navigation
-│   ├── Sort.tsx            # File sorting selector
-│   └── Thumbnail.tsx       # File preview thumbnail component
-├── constants/              # Application navigation items and sort configurations
-├── lib/
-│   ├── actions/            # Server actions for files and user management
-│   ├── appwrite/           # Appwrite client configuration and session management
-│   └── utils.ts            # Formatting, styling, and helper functions
-├── types/                  # TypeScript definitions and interfaces
-└── public/                 # Static assets (icons, images, illustrations)
-```
-
----
-
 ## 🚀 Getting Started
 
 ### Prerequisites
