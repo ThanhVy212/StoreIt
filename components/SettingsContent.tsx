@@ -14,6 +14,7 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
     const [name, setName] = useState(fullName);
     const [avatarUrl, setAvatarUrl] = useState(avatar);
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handlePhotoClick = () => {
         fileInputRef.current?.click();
@@ -41,20 +42,27 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
         }
 
         try {
-            const result = await uploadAvatar({ file, ownerId: fullName, currentAvatarUrl: avatarUrl });
-            if (result.url) {
-                setAvatarUrl(result.url);
-                await updateUser({ avatar: result.url });
+            setIsLoading(true);
+            const result = await uploadAvatar({ file });
+            if (!result.url) {
                 toast.add({
-                    type: "success",
-                    description: "Avatar updated successfully.",
+                    type: "error",
+                    description: result.error || "Failed to upload avatar.",
                 });
+                return;
             }
+            setAvatarUrl(result.url);
+            toast.add({
+                type: "success",
+                description: "Avatar updated successfully.",
+            });
         } catch {
             toast.add({
                 type: "error",
                 description: "Failed to upload avatar. Please try again.",
             });
+        } finally {
+            setIsLoading(false);
         }
 
         if (fileInputRef.current) {
@@ -73,7 +81,14 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
 
         setIsSaving(true);
         try {
-            await updateUser({ fullName: name.trim(), avatar: avatarUrl });
+            const result = await updateUser({ fullName: name.trim(), avatar: avatarUrl });
+            if (!result.success) {
+                toast.add({
+                    type: "error",
+                    description: result.error || "Failed to update profile.",
+                });
+                return;
+            }
             toast.add({
                 type: "success",
                 description: "Profile updated successfully.",
@@ -115,9 +130,11 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
                                 variant="outline"
                                 className="btn-change-avatar"
                                 onClick={handlePhotoClick}
+                                disabled={isLoading}
                             >
-                                Change Photo
+                                {isLoading ? "Uploading..." : "Change Photo"}
                             </Button>
+
                             <p className="caption mt-2 text-light-200">JPG, PNG or GIF. Max size 2MB</p>
                         </div>
                     </div>

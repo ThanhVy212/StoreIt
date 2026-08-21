@@ -24,7 +24,7 @@ import {actionsDropdownItems, sharedActionsDropdownItems, trashActionsDropdownIt
 import {addExtension, constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import {deleteFile, moveFileToTrash, renameFile, restoreFile, updateFileUsers} from "@/lib/actions/file.actions";
+import {deleteFile, moveFileToTrash, renameFile, restoreFile, updateFileUsers, unshareFileForMe} from "@/lib/actions/file.actions";
 import {usePathname} from "next/navigation";
 import {FileDetails, ShareInput} from "@/components/ActionsModalContent";
 import {toast} from "@/components/ui/toast";
@@ -83,9 +83,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
             restore: () => restoreFile({fileId: file.$id, path}),
             delete: () => deleteFile({fileId: file.$id, bucketFileId: file.bucketFileId, path}),
             unshare: () => {
-                if (!currentUserEmail) return Promise.resolve(null);
-                const updatedEmails = (file.users ?? []).filter((e) => e !== currentUserEmail);
-                return updateFileUsers({fileId: file.$id, emails: updatedEmails, path});
+                return unshareFileForMe({fileId: file.$id, path});
             },
         };
 

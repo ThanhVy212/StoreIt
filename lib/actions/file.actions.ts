@@ -266,9 +266,25 @@ export const renameFile = async({fileId, name, extension, path}: RenameFileProps
 }
 
 export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersProps) => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+        throw new Error("Authentication required.");
+    }
+
     const { tablesDB } = await createAdminClient();
 
     try {
+        const file = await tablesDB.getRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+        });
+
+        if (file.owner !== currentUser.$id) {
+            throw new Error("Only the file owner can update access.");
+        }
+
         const updatedFile = await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.filesTableId,
@@ -287,7 +303,13 @@ export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersPro
     }
 };
 
-export const unshareFileForMe = async ({fileId, currentUserEmail, path}: {fileId: string; currentUserEmail: string; path: string}) => {
+export const unshareFileForMe = async ({fileId, path}: {fileId: string; path: string}) => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+        throw new Error("Authentication required.");
+    }
+
     const { tablesDB } = await createAdminClient();
 
     try {
@@ -298,7 +320,12 @@ export const unshareFileForMe = async ({fileId, currentUserEmail, path}: {fileId
         });
 
         const currentUsers = (file.users as string[]) || [];
-        const updatedUsers = currentUsers.filter((email: string) => email !== currentUserEmail);
+
+        if (!currentUsers.includes(currentUser.email)) {
+            throw new Error("You are not a recipient of this file.");
+        }
+
+        const updatedUsers = currentUsers.filter((email: string) => email !== currentUser.email);
 
         const updatedFile = await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,

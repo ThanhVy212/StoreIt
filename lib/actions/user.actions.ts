@@ -175,13 +175,18 @@ export const updateUser = async ({
 
         await account.updateName({ name: fullName || user.fullName });
 
-        const { tablesDB } = await createAdminClient();
-        await tablesDB.updateRow({
-            databaseId: appwriteConfig.databaseId,
-            tableId: appwriteConfig.usersTableId,
-            rowId: user.$id,
-            data: updateData,
-        });
+        try {
+            const { tablesDB } = await createAdminClient();
+            await tablesDB.updateRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.usersTableId,
+                rowId: user.$id,
+                data: updateData,
+            });
+        } catch (dbErr) {
+            await account.updateName({ name: user.fullName }).catch(() => {});
+            throw dbErr;
+        }
 
         return parseStringify({ success: true });
     } catch (err) {
@@ -195,36 +200,24 @@ export const updateUser = async ({
 
 export const uploadAvatar = async ({
     file,
-    ownerId,
-    currentAvatarUrl,
 }: {
     file: File;
-    ownerId: string;
-    currentAvatarUrl?: string;
 }) => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+        throw new Error("Authentication required.");
+    }
+
+    const { storage } = await createAdminClient();
+
+    const extension = file.name.split(".").pop() || "jpg";
+    const fileName = `avatar/${currentUser.$id}.${extension}`;
+    const inputFile = InputFile.fromBuffer(file, fileName);
+
+    let bucketFile: Awaited<ReturnType<typeof storage.createFile>> | null = null;
     try {
-        const { storage } = await createAdminClient();
-
-        if (currentAvatarUrl) {
-            const oldFileId = extractBucketFileId(currentAvatarUrl);
-            if (oldFileId) {
-                try {
-                    await storage.deleteFile({
-                        bucketId: appwriteConfig.bucketId,
-                        fileId: oldFileId,
-                    });
-                } catch {
-                    console.log("Old avatar file not found or already deleted");
-                }
-            }
-        }
-
-        const extension = file.name.split(".").pop() || "jpg";
-        const fileName = `avatar/${ownerId}.${extension}`;
-
-        const inputFile = InputFile.fromBuffer(file, fileName);
-
-        const bucketFile = await storage.createFile({
+        bucketFile = await storage.createFile({
             bucketId: appwriteConfig.bucketId,
             fileId: ID.unique(),
             file: inputFile,
@@ -232,8 +225,33 @@ export const uploadAvatar = async ({
 
         const avatarUrl = constructFileUrl(bucketFile.$id);
 
+        const updateResult = await updateUser({ avatar: avatarUrl });
+        if (!updateResult.success) {
+            await storage.deleteFile({
+                bucketId: appwriteConfig.bucketId,
+                fileId: bucketFile.$id,
+            }).catch(() => {});
+            throw new Error(updateResult.error || "Failed to update profile.");
+        }
+
+        if (currentUser.avatar) {
+            const oldFileId = extractBucketFileId(currentUser.avatar);
+            if (oldFileId) {
+                await storage.deleteFile({
+                    bucketId: appwriteConfig.bucketId,
+                    fileId: oldFileId,
+                }).catch(() => {});
+            }
+        }
+
         return parseStringify({ url: avatarUrl, bucketFileId: bucketFile.$id });
     } catch (err) {
+        if (bucketFile) {
+            await storage.deleteFile({
+                bucketId: appwriteConfig.bucketId,
+                fileId: bucketFile.$id,
+            }).catch(() => {});
+        }
         console.log("Failed to upload avatar:", err);
         return parseStringify({
             url: null,

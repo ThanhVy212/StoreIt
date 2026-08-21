@@ -1,9 +1,12 @@
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import SettingsContent from "@/components/SettingsContent";
 import {FileViewProvider} from "@/components/FileViewProvider";
+import {redirect} from "next/navigation";
 
 const SettingsPage = async () => {
     const currentUser = await getCurrentUser();
+
+    if (!currentUser) return redirect("/sign-in");
 
     return (
         <FileViewProvider>

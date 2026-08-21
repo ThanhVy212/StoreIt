@@ -371,7 +371,6 @@
       28px
       64px
       32px;
-
     width: 100%;
     min-width: 0;
 
@@ -734,7 +733,7 @@
   @apply bg-brand text-white shadow-drop-2;
 }
 
-/*PROFILE*/
+/* PROFILE */
 
 .btn-change-avatar {
   @apply rounded-full border border-light-300 px-6 text-sm font-medium text-light-100 transition-colors hover:border-brand hover:text-brand;

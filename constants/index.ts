@@ -76,11 +76,6 @@ export const sharedActionsDropdownItems = [
         value: 'details',
     },
     {
-        label: 'Share',
-        icon: '/assets/icons/share.svg',
-        value: 'share',
-    },
-    {
         label: 'Download',
         icon: '/assets/icons/download.svg',
         value: 'download',
