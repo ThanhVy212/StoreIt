@@ -5,6 +5,7 @@ import { convertFileSize, getFileTypesParams } from "@/lib/utils";
 import TypeFileList from "@/components/TypeFileList";
 import { FileViewProvider } from "@/components/FileViewProvider";
 import FileViewToggle from "@/components/FileViewToggle";
+import { getCurrentUser } from "@/lib/actions/user.actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
     const searchText = ((await searchParams)?.query as string) || "";
     const sort = ((await searchParams)?.sort as string) || "$createdAt-desc";
     const isTrash = type === "trash";
-
+    const currentUser = await getCurrentUser();
 
     const types = isTrash ? [] : (getFileTypesParams(type) as FileType[]);
 
@@ -55,7 +56,7 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
                     </div>
                 </section>
 
-                <TypeFileList files={files?.rows || []} isTrash={isTrash} />
+                <TypeFileList files={files?.rows || []} isTrash={isTrash} currentUserId={currentUser?.$id} currentUserEmail={currentUser?.email} />
             </div>
         </FileViewProvider>
     );

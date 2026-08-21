@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import {TypeFileListProps} from "@/types/db.types";
 
-const TypeFileList = ({ files, isTrash = false }: TypeFileListProps) => {
+const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail }: TypeFileListProps) => {
     const { viewMode } = useFileView();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -241,6 +241,8 @@ const TypeFileList = ({ files, isTrash = false }: TypeFileListProps) => {
                             showCheckbox={true}
                             isSelected={selectedIds.includes(file.$id)}
                             onToggleSelect={() => handleToggleSelect(file.$id)}
+                            currentUserId={currentUserId}
+                            currentUserEmail={currentUserEmail}
                         />
                     ))}
                 </section>
@@ -249,6 +251,8 @@ const TypeFileList = ({ files, isTrash = false }: TypeFileListProps) => {
                     files={files}
                     selectedIds={selectedIds}
                     onToggleSelect={(file) => handleToggleSelect(file.$id)}
+                    currentUserId={currentUserId}
+                    currentUserEmail={currentUserEmail}
                 />
             )}
 

@@ -2,10 +2,12 @@ import React from 'react';
 import {FileRow, ShareInputProps} from "@/types/db.types";
 import Thumbnail from "@/components/Thumbnail";
 import FormattedDateTime from "@/components/FormattedDateTime";
-import {convertFileSize, formatDateTime} from "@/lib/utils";
+import {constructFileUrl, convertFileSize, formatDateTime} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import Image from "next/image";
+import {toast} from "@/components/ui/toast";
+import {z} from "zod";
 
 const ImageThumbnail = ({file}: {file: FileRow}) => (
     <div className="file-details-thumbnail w-full min-w-0 overflow-hidden">
@@ -17,10 +19,23 @@ const ImageThumbnail = ({file}: {file: FileRow}) => (
     </div>
 )
 
-const DetailRow = ({label, value}: {label: string, value: string}) => (
+const DetailRow = ({label, value, avatar}: {label: string, value: string, avatar?: string}) => (
     <div className="flex gap-2">
         <p className="file-details-label text-left shrink-0">{label}</p>
-        <p className="file-details-value text-left truncate" title={value}>{value}</p>
+        {avatar ? (
+            <>
+                <Image
+                    src={avatar}
+                    alt="avatar"
+                    width={24}
+                    height={24}
+                    className="file-table-owner-avatar"
+                />
+                <p className="file-details-value text-left truncate" title={value}>{value}</p>
+            </>
+        ):(
+            <p className="file-details-value text-left truncate" title={value}>{value}</p>
+        )}
     </div>
 )
 
@@ -31,65 +46,146 @@ export const FileDetails = ({file}: {file: FileRow}) => {
             <div className="space-y-4 px-2 pt-2">
                 <DetailRow label="Format:" value={file.extension ?? "—"} />
                 <DetailRow label="Size:" value={file.size != null ? convertFileSize(file.size) : "—"} />
-                <DetailRow label="Owner:" value={file.owner?.fullName ?? "—"} />
+                <DetailRow label="Upload:" value={file.owner?.fullName ?? "—"} />
                 <DetailRow label="Last edit:" value={formatDateTime(file.$updatedAt)} />
+                <DetailRow label="Owner:" value={file.owner?.email ?? "—"} avatar={file.owner?.avatar} />
             </div>
         </>
     )
 }
 
 
-export const ShareInput = ({file, onInputChange, onRemove}: ShareInputProps) => {
+export const ShareInput = ({file, onAddEmails, onRemove, isOwner = true, registerValidator, sharedEmails}: ShareInputProps) => {
+    const [inputValue, setInputValue] = React.useState("");
+
+    const emailSchema = z.email("Please enter a valid email address.");
+
+    const processEmails = (raw: string): boolean => {
+        const candidates = raw
+            .split(",")
+            .map((email) => email.trim().toLowerCase())
+            .filter((email) => email.length > 0);
+
+        if (candidates.length === 0) return true;
+
+        const existingUsers = (sharedEmails ?? file.users ?? []).map((e) => e.toLowerCase());
+
+        let hasError = false;
+        const validNew: string[] = [];
+        for (const email of candidates) {
+            const result = emailSchema.safeParse(email);
+            if (!result.success) {
+                toast.add({ type: "error", description: result.error.issues[0].message });
+                hasError = true;
+                continue;
+            }
+            if (existingUsers.includes(email) || validNew.includes(email)) {
+                toast.add({ type: "error", description: `Already shared with "${email}".` });
+                hasError = true;
+                continue;
+            }
+            validNew.push(email);
+        }
+
+        if (validNew.length > 0) {
+            onAddEmails(validNew);
+            setInputValue("");
+        }
+        return !hasError;
+    };
+
+    React.useEffect(() => {
+        if (registerValidator) {
+            registerValidator(() => processEmails(inputValue));
+        }
+    });
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            processEmails(inputValue);
+        }
+    };
+
+    const handleGetLink = async () => {
+        const fileUrl = constructFileUrl(file.bucketFileId);
+        try {
+            await navigator.clipboard.writeText(fileUrl);
+            toast.add({ type: "success", description: "Link copied to clipboard." });
+        } catch {
+            toast.add({
+                type: "error",
+                description: "Failed to copy link.",
+            });
+        }
+    };
+
     return (
         <>
             <ImageThumbnail file={file} />
 
             <div className="share-wrapper">
-                <p className="subtitle-2 pl-1 text-light-100">
-                    Share with other users
-                </p>
+                {isOwner ? (
+                    <>
+                        <p className="subtitle-2 pl-1 text-light-100">
+                            Share with other users
+                        </p>
 
-                <Input
-                    type="email"
-                    placeholder="Enter email address"
-                    onChange={(e) => {
-                        const recipients = e.target.value
-                            .split(",")
-                            .map((email) => email.trim().toLowerCase())
-                            .filter((email) => email.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-                        onInputChange(recipients);
-                    }}
-                    className="share-input-field"
-                />
+                        <Input
+                            type="email"
+                            placeholder="Enter email, press enter to add"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="share-input-field"
+                        />
+
+                        <div className="pt-4">
+                            <div className="flex justify-between">
+                                <p className="subtitle-2 text-light-100">Share with</p>
+                                <p className="subtitle-2 text-light-200">{sharedEmails?.length ?? file.users?.length ?? 0} users</p>
+                            </div>
+
+                            <ul className="pt-2 w-full">
+                                {(sharedEmails ?? file.users ?? []).map((email: string) => (
+                                    <li
+                                        key={email}
+                                        className="flex w-full items-center justify-between"
+                                    >
+                                        <p className="subtitle-2">{email}</p>
+                                        <Button
+                                            onClick={() => onRemove(email)}
+                                            className="share-remove-user"
+                                        >
+                                            <Image
+                                                src="/assets/icons/remove.svg"
+                                                alt="remove"
+                                                width={24}
+                                                height={24}
+                                                className="remove-icon"
+                                            />
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </>
+                ) : null}
 
                 <div className="pt-4">
-                    <div className="flex justify-between">
-                        <p className="subtitle-2 text-light-100">Share with</p>
-                        <p className="subtitle-2 text-light-200">{file.users?.length} users</p>
-                    </div>
-
-                    <ul className="pt-2 w-full">
-                        {file.users?.map((email: string) => (
-                            <li
-                                key={email}
-                                className="flex w-full items-center justify-between"
-                            >
-                                <p className="subtitle-2">{email}</p>
-                                <Button
-                                    onClick={() => onRemove(email)}
-                                    className="share-remove-user"
-                                >
-                                    <Image
-                                        src="/assets/icons/remove.svg"
-                                        alt="remove"
-                                        width={24}
-                                        height={24}
-                                        className="remove-icon"
-                                    />
-                                </Button>
-                            </li>
-                        ))}
-                    </ul>
+                    <Button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleGetLink}
+                        className="w-full modal-submit-button flex items-center justify-center gap-2"
+                    >
+                        <Image
+                            src="/assets/icons/copy.svg"
+                            alt="get link"
+                            width={20}
+                            height={20}
+                        />
+                        Get link
+                    </Button>
                 </div>
             </div>
         </>

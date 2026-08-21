@@ -34,6 +34,11 @@ export const navItems = [
         icon: '/assets/icons/trash.svg',
         url: '/trash',
     },
+    {
+        name: 'Settings',
+        icon: '/assets/icons/setting.svg',
+        url: '/settings',
+    },
 ];
 
 export const actionsDropdownItems = [
@@ -61,6 +66,24 @@ export const actionsDropdownItems = [
         label: 'Move to trash',
         icon: '/assets/icons/delete.svg',
         value: 'trash',
+    },
+];
+
+export const sharedActionsDropdownItems = [
+    {
+        label: 'Details',
+        icon: '/assets/icons/info.svg',
+        value: 'details',
+    },
+    {
+        label: 'Download',
+        icon: '/assets/icons/download.svg',
+        value: 'download',
+    },
+    {
+        label: 'Unshare',
+        icon: '/assets/icons/unshare.svg',
+        value: 'unshare',
     },
 ];
 

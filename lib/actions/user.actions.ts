@@ -3,7 +3,8 @@
 import {createAdminClient, createSessionClient} from "@/lib/appwrite";
 import {appwriteConfig} from "@/lib/appwrite/config";
 import {ID, Query} from "node-appwrite";
-import {parseStringify} from "@/lib/utils";
+import {InputFile} from "node-appwrite/file";
+import {constructFileUrl, extractBucketFileId, parseStringify} from "@/lib/utils";
 import {cookies} from "next/headers";
 import {avatarPlaceholderUrl} from "@/constants";
 import {redirect} from "next/navigation";
@@ -153,4 +154,108 @@ export const signInUser = async ({email}: {email: string}) => {
             error: err instanceof Error ? err.message : "Failed to sign in.",
         });
     }
-}
+}
+
+export const updateUser = async ({
+    fullName,
+    avatar,
+}: {
+    fullName?: string;
+    avatar?: string;
+}) => {
+    try {
+        const { account } = await createSessionClient();
+        const user = await getCurrentUser();
+
+        if (!user) throw new Error("User not found");
+
+        const updateData: Record<string, string> = {};
+        if (fullName !== undefined) updateData.fullName = fullName;
+        if (avatar !== undefined) updateData.avatar = avatar;
+
+        await account.updateName({ name: fullName || user.fullName });
+
+        try {
+            const { tablesDB } = await createAdminClient();
+            await tablesDB.updateRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.usersTableId,
+                rowId: user.$id,
+                data: updateData,
+            });
+        } catch (dbErr) {
+            await account.updateName({ name: user.fullName }).catch(() => {});
+            throw dbErr;
+        }
+
+        return parseStringify({ success: true });
+    } catch (err) {
+        console.log("Failed to update user:", err);
+        return parseStringify({
+            success: false,
+            error: err instanceof Error ? err.message : "Failed to update user.",
+        });
+    }
+};
+
+export const uploadAvatar = async ({
+    file,
+}: {
+    file: File;
+}) => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+        throw new Error("Authentication required.");
+    }
+
+    const { storage } = await createAdminClient();
+
+    const extension = file.name.split(".").pop() || "jpg";
+    const fileName = `avatar/${currentUser.$id}.${extension}`;
+    const inputFile = InputFile.fromBuffer(file, fileName);
+
+    let bucketFile: Awaited<ReturnType<typeof storage.createFile>> | null = null;
+    try {
+        bucketFile = await storage.createFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: ID.unique(),
+            file: inputFile,
+        });
+
+        const avatarUrl = constructFileUrl(bucketFile.$id);
+
+        const updateResult = await updateUser({ avatar: avatarUrl });
+        if (!updateResult.success) {
+            await storage.deleteFile({
+                bucketId: appwriteConfig.bucketId,
+                fileId: bucketFile.$id,
+            }).catch(() => {});
+            throw new Error(updateResult.error || "Failed to update profile.");
+        }
+
+        if (currentUser.avatar) {
+            const oldFileId = extractBucketFileId(currentUser.avatar);
+            if (oldFileId) {
+                await storage.deleteFile({
+                    bucketId: appwriteConfig.bucketId,
+                    fileId: oldFileId,
+                }).catch(() => {});
+            }
+        }
+
+        return parseStringify({ url: avatarUrl, bucketFileId: bucketFile.$id });
+    } catch (err) {
+        if (bucketFile) {
+            await storage.deleteFile({
+                bucketId: appwriteConfig.bucketId,
+                fileId: bucketFile.$id,
+            }).catch(() => {});
+        }
+        console.log("Failed to upload avatar:", err);
+        return parseStringify({
+            url: null,
+            error: err instanceof Error ? err.message : "Failed to upload avatar.",
+        });
+    }
+};

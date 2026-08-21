@@ -21,8 +21,11 @@ export type FileRow = Models.Row & {
 
 export interface ShareInputProps {
     file: FileRow;
-    onInputChange: React.Dispatch<React.SetStateAction<string[]>>;
+    onAddEmails: (newEmails: string[]) => void;
     onRemove: (email: string) => void;
+    isOwner?: boolean;
+    registerValidator?: (validate: () => boolean) => void;
+    sharedEmails?: string[];
 }
 
 export type FileViewMode = 'grid' | 'list';
@@ -30,6 +33,8 @@ export type FileViewMode = 'grid' | 'list';
 export interface TypeFileListProps {
     files: FileRow[];
     isTrash?: boolean;
+    currentUserId?: string;
+    currentUserEmail?: string;
 }
 
 export interface FileCardProps {
@@ -37,10 +42,14 @@ export interface FileCardProps {
     showCheckbox?: boolean;
     isSelected?: boolean;
     onToggleSelect?: (file: FileRow) => void;
+    currentUserId?: string;
+    currentUserEmail?: string;
 }
 
 export interface FileTableListProps {
     files: FileRow[];
     selectedIds: string[];
     onToggleSelect: (file: FileRow) => void;
+    currentUserId?: string;
+    currentUserEmail?: string;
 }

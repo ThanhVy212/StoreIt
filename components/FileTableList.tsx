@@ -21,6 +21,8 @@ const FileTableRow = ({
     showCheckbox = false,
     isSelected = false,
     onToggleSelect,
+    currentUserId,
+    currentUserEmail,
 }: FileCardProps) => {
     const fileUrl = getFileUrl(file.url);
     const modifiedAt = file.$updatedAt || file.$createdAt;
@@ -86,7 +88,7 @@ const FileTableRow = ({
                 className="file-table-cell file-table-cell-actions"
                 onClick={(e) => e.stopPropagation()}
             >
-                <ActionDropdown file={file} />
+                <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail} />
             </div>
         </div>
     );
@@ -96,6 +98,7 @@ const FileTableList = ({
     files,
     selectedIds,
     onToggleSelect,
+    currentUserId,
 }: FileTableListProps) => {
     return (
         <section className="file-table">
@@ -103,8 +106,8 @@ const FileTableList = ({
                 <span className="file-table-cell file-table-cell-check" />
                 <span className="file-table-cell">Name</span>
                 <span className="file-table-cell">Owner</span>
-                <span className="file-table-cell">Date modified</span>
-                <span className="file-table-cell">File size</span>
+                <span className="file-table-cell file-table-header-date">Date modified</span>
+                <span className="file-table-cell file-table-header-size">File size</span>
                 <span className="file-table-cell file-table-cell-actions" />
             </div>
 
@@ -116,6 +119,7 @@ const FileTableList = ({
                         showCheckbox={true}
                         isSelected={selectedIds.includes(file.$id)}
                         onToggleSelect={onToggleSelect}
+                        currentUserId={currentUserId}
                     />
                 ))}
             </div>
