@@ -69,6 +69,29 @@ export const actionsDropdownItems = [
     },
 ];
 
+export const sharedActionsDropdownItems = [
+    {
+        label: 'Details',
+        icon: '/assets/icons/info.svg',
+        value: 'details',
+    },
+    {
+        label: 'Share',
+        icon: '/assets/icons/share.svg',
+        value: 'share',
+    },
+    {
+        label: 'Download',
+        icon: '/assets/icons/download.svg',
+        value: 'download',
+    },
+    {
+        label: 'Unshare',
+        icon: '/assets/icons/unshare.svg',
+        value: 'unshare',
+    },
+];
+
 export const trashActionsDropdownItems = [
     {
         label: 'Restore',

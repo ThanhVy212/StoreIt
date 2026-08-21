@@ -17,10 +17,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {FileRow} from "@/types/db.types";
 import Image from "next/image";
-import {actionsDropdownItems, trashActionsDropdownItems} from "@/constants";
+import {actionsDropdownItems, sharedActionsDropdownItems, trashActionsDropdownItems} from "@/constants";
 import {addExtension, constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -31,17 +31,25 @@ import {toast} from "@/components/ui/toast";
 
 
 
-const ActionDropdown = ({file}: {file: FileRow}) => {
+const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow; currentUserId?: string; currentUserEmail?: string}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [action, setAction] = useState<ActionType | null>(null);
     const [name, setName] = useState(removeExtension(file.name ?? ""))
     const [isLoading, setIsLoading] = useState(false);
     const [emails, setEmails] = useState<string[]>([]);
+    const shareValidatorRef = useRef<(() => boolean) | null>(null);
 
     const path = usePathname();
     const isTrashed = Boolean(file.trashed);
-    const menuItems = isTrashed ? trashActionsDropdownItems : actionsDropdownItems;
+    const isOwner = file.owner?.$id === currentUserId;
+    const isSharedWithMe = !isOwner && currentUserId !== undefined;
+
+    const menuItems = isTrashed
+        ? trashActionsDropdownItems
+        : isSharedWithMe
+            ? sharedActionsDropdownItems
+            : actionsDropdownItems;
 
     useEffect(() => {
         setName(removeExtension(file.name ?? ""));
@@ -59,6 +67,14 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
         const currentAction = selectedAction ?? action;
         if (!currentAction) return;
 
+        if (currentAction.value === "share" && shareValidatorRef.current) {
+            const isValid = shareValidatorRef.current();
+            if (!isValid) {
+                setIsLoading(false);
+                return;
+            }
+        }
+
         setIsLoading(true);
         const actions = {
             rename: () => renameFile({fileId: file.$id, name: name.trim(), extension: file.extension!, path}),
@@ -66,6 +82,11 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
             trash: () => moveFileToTrash({fileId: file.$id, path}),
             restore: () => restoreFile({fileId: file.$id, path}),
             delete: () => deleteFile({fileId: file.$id, bucketFileId: file.bucketFileId, path}),
+            unshare: () => {
+                if (!currentUserEmail) return Promise.resolve(null);
+                const updatedEmails = (file.users ?? []).filter((e) => e !== currentUserEmail);
+                return updateFileUsers({fileId: file.$id, emails: updatedEmails, path});
+            },
         };
 
         try {
@@ -83,7 +104,12 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                 if (currentAction.value === "delete") {
                     toast.add({ type: "success", description: "File deleted permanently." });
                 }
-                closeAllModals();
+                if (currentAction.value === "unshare") {
+                    toast.add({ type: "success", description: "File unshared successfully." });
+                }
+                if (currentAction.value !== "share") {
+                    closeAllModals();
+                }
             }
         } catch {
             toast.add({
@@ -101,8 +127,19 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
         const success = await updateFileUsers({fileId: file.$id, emails: updatedEmails, path});
 
         if(success) setEmails(updatedEmails);
-        closeAllModals();
     }
+
+    const handleAddEmails = (newEmails: string[]) => {
+        setEmails((prev) => {
+            const merged = [...prev];
+            for (const email of newEmails) {
+                if (!merged.includes(email)) {
+                    merged.push(email);
+                }
+            }
+            return merged;
+        });
+    };
 
     const renderDialogContent = () => {
         if(!action || !['rename', 'share', 'delete', 'details'].includes(action.value)) return null;
@@ -126,7 +163,7 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                         <FileDetails file={file} />
                     )}
                     {value === "share" && (
-                        <ShareInput file={file} onInputChange={setEmails} onRemove={handleRemoveUser}/>
+                        <ShareInput file={file} onAddEmails={handleAddEmails} onRemove={handleRemoveUser} isOwner={isOwner} registerValidator={(fn) => { shareValidatorRef.current = fn; }} sharedEmails={emails}/>
                     )}
                     {value === "delete" && (
                         <p className="delete-confirmation">
@@ -136,7 +173,7 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
                         </p>
                     )}
                 </DialogHeader>
-                {['rename', 'delete', 'share'].includes(value) && (
+                {(['rename', 'delete'].includes(value) || (value === 'share' && isOwner)) && (
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
                         <Button onClick={closeAllModals} className="modal-cancel-button">Cancel</Button>
                         <Button onClick={() => void handleAction()} className="modal-submit-button ">
@@ -195,7 +232,7 @@ const ActionDropdown = ({file}: {file: FileRow}) => {
 
                                     setAction(item);
 
-                                    if (item.value === "trash" || item.value === "restore") {
+                                    if (item.value === "trash" || item.value === "restore" || item.value === "unshare") {
                                         setIsDropdownOpen(false);
                                         void handleAction(item);
                                         return;

@@ -287,6 +287,37 @@ export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersPro
     }
 };
 
+export const unshareFileForMe = async ({fileId, currentUserEmail, path}: {fileId: string; currentUserEmail: string; path: string}) => {
+    const { tablesDB } = await createAdminClient();
+
+    try {
+        const file = await tablesDB.getRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+        });
+
+        const currentUsers = (file.users as string[]) || [];
+        const updatedUsers = currentUsers.filter((email: string) => email !== currentUserEmail);
+
+        const updatedFile = await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            rowId: fileId,
+            data: {
+                users: updatedUsers,
+            },
+        });
+
+        revalidatePath(path);
+
+        return parseStringify(updatedFile);
+    } catch (err) {
+        console.log('Failed to unshare file', err);
+        throw err;
+    }
+};
+
 const setFilesTrashed = async (fileIds: string[], trashed: boolean, path: string) => {
     const { tablesDB } = await createAdminClient();
 

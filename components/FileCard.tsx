@@ -10,7 +10,7 @@ import ActionDropdown from "@/components/ActionDropdown";
 import { Checkbox } from "@/components/ui/checkbox";
 
 
-const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelect}: FileCardProps) => {
+const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelect, currentUserId, currentUserEmail}: FileCardProps) => {
     const fileUrl = file.url?.includes("project=undefined")
         ? file.url.replace("project=undefined", `project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`)
         : file.url;
@@ -46,7 +46,7 @@ const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelec
                 </div>
 
                 <div className="flex flex-col items-end justify-between self-stretch">
-                    <ActionDropdown file={file}/>
+                    <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail}/>
                     {file.size != null && (
                         <p className="body-1">{convertFileSize(file.size)}</p>
                     )}
