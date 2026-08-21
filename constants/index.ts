@@ -34,6 +34,11 @@ export const navItems = [
         icon: '/assets/icons/trash.svg',
         url: '/trash',
     },
+    {
+        name: 'Settings',
+        icon: '/assets/icons/setting.svg',
+        url: '/settings',
+    },
 ];
 
 export const actionsDropdownItems = [

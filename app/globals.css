@@ -546,6 +546,10 @@
   @apply flex flex-col gap-2 text-light-100;
 }
 
+.profile-card {
+  @apply flex flex-col gap-6 rounded-[18px] bg-white p-5 shadow-sm transition-all;
+}
+
 /*CHART*/
 
 .chart {
@@ -714,7 +718,7 @@
 }
 
 .sidebar-nav-item {
-  @apply flex h-[52px] items-center justify-center gap-4 rounded-xl text-base leading-6 font-semibold text-light-100 lg:w-full lg:justify-start lg:rounded-full lg:px-[30px];
+  @apply flex h-[44px] items-center justify-center gap-4 rounded-xl text-base leading-6 font-semibold text-light-100 lg:w-full lg:justify-start lg:rounded-full lg:px-[30px];
 }
 
 .sidebar-user-info {
@@ -728,6 +732,20 @@
 
 .shad-active {
   @apply bg-brand text-white shadow-drop-2;
+}
+
+/*PROFILE*/
+
+.btn-change-avatar {
+  @apply rounded-full border border-light-300 px-6 text-sm font-medium text-light-100 transition-colors hover:border-brand hover:text-brand;
+}
+
+.btn-save-change {
+  @apply rounded-full bg-brand px-6 text-sm font-medium text-white transition-all hover:bg-brand-100;
+}
+
+.profile-user-avatar {
+  @apply aspect-square w-24 rounded-full object-cover;
 }
 
 /*SORT*/

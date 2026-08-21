@@ -3,7 +3,8 @@
 import {createAdminClient, createSessionClient} from "@/lib/appwrite";
 import {appwriteConfig} from "@/lib/appwrite/config";
 import {ID, Query} from "node-appwrite";
-import {parseStringify} from "@/lib/utils";
+import {InputFile} from "node-appwrite/file";
+import {constructFileUrl, extractBucketFileId, parseStringify} from "@/lib/utils";
 import {cookies} from "next/headers";
 import {avatarPlaceholderUrl} from "@/constants";
 import {redirect} from "next/navigation";
@@ -153,4 +154,90 @@ export const signInUser = async ({email}: {email: string}) => {
             error: err instanceof Error ? err.message : "Failed to sign in.",
         });
     }
-}
+}
+
+export const updateUser = async ({
+    fullName,
+    avatar,
+}: {
+    fullName?: string;
+    avatar?: string;
+}) => {
+    try {
+        const { account } = await createSessionClient();
+        const user = await getCurrentUser();
+
+        if (!user) throw new Error("User not found");
+
+        const updateData: Record<string, string> = {};
+        if (fullName !== undefined) updateData.fullName = fullName;
+        if (avatar !== undefined) updateData.avatar = avatar;
+
+        await account.updateName({ name: fullName || user.fullName });
+
+        const { tablesDB } = await createAdminClient();
+        await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.usersTableId,
+            rowId: user.$id,
+            data: updateData,
+        });
+
+        return parseStringify({ success: true });
+    } catch (err) {
+        console.log("Failed to update user:", err);
+        return parseStringify({
+            success: false,
+            error: err instanceof Error ? err.message : "Failed to update user.",
+        });
+    }
+};
+
+export const uploadAvatar = async ({
+    file,
+    ownerId,
+    currentAvatarUrl,
+}: {
+    file: File;
+    ownerId: string;
+    currentAvatarUrl?: string;
+}) => {
+    try {
+        const { storage } = await createAdminClient();
+
+        if (currentAvatarUrl) {
+            const oldFileId = extractBucketFileId(currentAvatarUrl);
+            if (oldFileId) {
+                try {
+                    await storage.deleteFile({
+                        bucketId: appwriteConfig.bucketId,
+                        fileId: oldFileId,
+                    });
+                } catch {
+                    console.log("Old avatar file not found or already deleted");
+                }
+            }
+        }
+
+        const extension = file.name.split(".").pop() || "jpg";
+        const fileName = `avatar/${ownerId}.${extension}`;
+
+        const inputFile = InputFile.fromBuffer(file, fileName);
+
+        const bucketFile = await storage.createFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: ID.unique(),
+            file: inputFile,
+        });
+
+        const avatarUrl = constructFileUrl(bucketFile.$id);
+
+        return parseStringify({ url: avatarUrl, bucketFileId: bucketFile.$id });
+    } catch (err) {
+        console.log("Failed to upload avatar:", err);
+        return parseStringify({
+            url: null,
+            error: err instanceof Error ? err.message : "Failed to upload avatar.",
+        });
+    }
+};
