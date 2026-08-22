@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getFiles, getTotalSpaceUsed } from "@/lib/actions/file.actions";
+import { getFolders, getFolderFileCountForMultiple } from "@/lib/actions/folder.actions";
 import { convertFileSize, getUsageSummary } from "@/lib/utils";
 import Chart from "@/components/Chart";
 import { Separator } from "@/components/ui/separator";
@@ -13,10 +14,20 @@ import { FileRow } from "@/types/db.types";
 export const dynamic = "force-dynamic";
 
 const Dashboard = async () => {
-    const recentFiles = await getFiles({ types: [], limit: 8, onlyOwner: true });
-    const  totalSpace = await getTotalSpaceUsed();
+    const recentFiles = await getFiles({ types: [], limit: 8, onlyOwner: true, folderId: null });
+    const totalSpace = await getTotalSpaceUsed();
+    const folders = await getFolders({ onlyOwner: true, trashed: false, limit: 200 });
+    const folderRows = folders?.rows ?? [];
+    const folderFileCounts = await getFolderFileCountForMultiple(
+        folderRows.map((f: any) => f.$id)
+    );
 
     const usageSummary = getUsageSummary(totalSpace);
+
+    const totalFolderFiles = Object.values(folderFileCounts).reduce(
+        (acc: number, count: number) => acc + count,
+        0
+    );
 
     return (
         <div className="dashboard-container">
@@ -54,6 +65,27 @@ const Dashboard = async () => {
                             </div>
                         </Link>
                     ))}
+                    <Link href="/folders" className="dashboard-summary-card">
+                        <div className="space-y-4">
+                            <div className="flex justify-between gap-3">
+                                <Image
+                                    src="/assets/icons/file-folder-light.svg"
+                                    width={100}
+                                    height={100}
+                                    alt="Folders"
+                                    className="summary-type-icon"
+                                />
+                                <h4 className="summary-type-size">
+                                    {folderRows.length}
+                                </h4>
+                            </div>
+                            <h5 className="summary-type-title">Folders</h5>
+                            <Separator className="bg-light-400" />
+                            <p className="body-2 text-center">
+                                {totalFolderFiles} file{totalFolderFiles !== 1 ? "s" : ""} in folders
+                            </p>
+                        </div>
+                    </Link>
                 </ul>
             </section>
 

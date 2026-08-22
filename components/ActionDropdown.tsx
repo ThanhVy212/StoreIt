@@ -75,7 +75,6 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
             }
         }
 
-        setIsLoading(true);
         const actions = {
             rename: () => renameFile({fileId: file.$id, name: name.trim(), extension: file.extension!, path}),
             share: () => updateFileUsers({fileId: file.$id, emails, path}),
@@ -88,6 +87,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
         };
 
         try {
+            setIsLoading(true);
             const success = await actions[currentAction.value as keyof typeof actions]();
             if (success) {
                 if (currentAction.value === "rename" && success?.name) {
@@ -174,7 +174,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                 {(['rename', 'delete'].includes(value) || (value === 'share' && isOwner)) && (
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
                         <Button onClick={closeAllModals} className="modal-cancel-button">Cancel</Button>
-                        <Button onClick={() => void handleAction()} className="modal-submit-button ">
+                        <Button onClick={() => void handleAction()} className="modal-submit-button " disabled={isLoading}>
                             <p className="capitalize">{value === "delete" ? "Delete forever" : value}</p>
                             {isLoading && (
                                 <Image src="/assets/icons/loader.svg"

@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 
-declare type FileType = 'document' | 'image' | 'video' | 'audio' | 'other';
+declare type FileType = 'document' | 'image' | 'video' | 'other';
 
 declare type AuthFormType = 'sign-in' | 'sign-up';
 
@@ -20,6 +20,7 @@ declare interface UploadFileProps {
     ownerId: string;
     accountId: string;
     path: string;
+    folderId?: string | null;
 }
 declare interface SaveFileRecordProps {
     bucketFileId: string;
@@ -28,6 +29,7 @@ declare interface SaveFileRecordProps {
     ownerId: string;
     accountId: string;
     path: string;
+    folderId?: string | null;
 }
 declare interface GetFilesProps {
     types?: FileType[];
@@ -38,6 +40,7 @@ declare interface GetFilesProps {
     fetchAll?: boolean;
     onlyOwner?: boolean;
     trashed?: boolean;
+    folderId?: string | null;
 }
 
 declare interface TrashFileProps {
@@ -78,6 +81,7 @@ declare interface FileUploaderProps {
     ownerId: string;
     accountId: string;
     className?: string;
+    folderId?: string | null;
 }
 
 declare interface MobileNavigationProps {

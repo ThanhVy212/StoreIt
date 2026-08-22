@@ -13,9 +13,9 @@ import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID } from "appwrite";
 import UploadProgressList, { UploadingFile } from "@/components/UploadProgressList";
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB Appwrite chunk threshold
+const CHUNK_SIZE = 5 * 1024 * 1024;
 
-const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderProps) => {
+const FolderFileUploader = ({ ownerId, accountId, folderId, className }: FileUploaderProps) => {
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     const path = usePathname();
 
@@ -124,12 +124,7 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
             if (file.size > MAX_FILE_SIZE) {
                 toast.add({
                     type: "error",
-                    description: (
-                        <span className="body-2 text-white">
-                            <span className="font-semibold">{file.name}</span> is too large.
-                            Max file size is 50MB.
-                        </span>
-                    ),
+                    description: `${file.name} is too large. Max file size is 50MB.`,
                 });
                 continue;
             }
@@ -222,22 +217,15 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
             <input {...getInputProps()} />
             <Button
                 type="button"
-                className={cn('uploader-button group', className)}
+                className={cn('flex items-center gap-2 bg-brand text-white hover:bg-brand-100', className)}
             >
                 <Image
                     src="/assets/icons/upload.svg"
                     alt="upload"
-                    width={24}
-                    height={24}
-                />{" "}
-                <span className="relative inline-flex overflow-hidden text-xs">
-                    <div className="translate-y-0 skew-y-0 transition duration-500 group-hover:translate-y-[-160%] group-hover:skew-y-12">
-                        Upload
-                    </div>
-                    <div className="absolute translate-y-[164%] skew-y-12 transition duration-500 group-hover:translate-y-0 group-hover:skew-y-0">
-                        Upload
-                    </div>
-                </span>
+                    width={20}
+                    height={20}
+                />
+                <span>Upload</span>
             </Button>
             <UploadProgressList
                 files={uploadingFiles}
@@ -247,5 +235,4 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
     );
 };
 
-export default FileUploader;
-
+export default FolderFileUploader;

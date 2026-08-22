@@ -25,6 +25,13 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
     const [open, setOpen] = useState<boolean>(false);
     const pathname = usePathname();
 
+    const isActive = (url: string, name: string) => {
+        if (name === 'Folders') {
+            return pathname === url || pathname.startsWith('/folders');
+        }
+        return pathname === url;
+    };
+
     return (
         <header className="mobile-header">
             <Image
@@ -59,20 +66,23 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
 
                     <nav className="mobile-nav">
                         <ul className="mobile-nav-list">
-                            {navItems.map(({url, name, icon}) => (
-                                <Link key={name} href={url} className="lg:w-full">
-                                    <li className={cn("mobile-nav-item", pathname === url && "shad-active")}>
-                                        <Image
-                                            src={icon}
-                                            alt={name}
-                                            width={24}
-                                            height={24}
-                                            className={cn("nav-icon", pathname === url && "nav-icon-active")}
-                                        />
-                                        <p>{name}</p>
-                                    </li>
-                                </Link>
-                            ))}
+                            {navItems.map(({url, name, icon}) => {
+                                const active = isActive(url, name);
+                                return (
+                                    <Link key={name} href={url} className="lg:w-full">
+                                        <li className={cn("mobile-nav-item", active && "shad-active")}>
+                                            <Image
+                                                src={icon}
+                                                alt={name}
+                                                width={24}
+                                                height={24}
+                                                className={cn("nav-icon", active && "nav-icon-active")}
+                                            />
+                                            <p>{name}</p>
+                                        </li>
+                                    </Link>
+                                );
+                            })}
                         </ul>
                     </nav>
 

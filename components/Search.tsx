@@ -55,7 +55,15 @@ const Search = () => {
     const handleClickItem = (file: FileRow)=> {
         setOpen(false);
         setResults([]);
-        router.push(`/${file.type === "other" ? "others" : file.type === "video" ? "video" : file.type === "audio" ? "audio" : file.type + "s"}?query=${file.name}`);
+        if (file.folderId) {
+            router.push(`/folders/${file.folderId}?query=${file.name}`);
+        } else if (file.type === "other" || (file.type as string) === "audio") {
+            router.push(`/others?query=${file.name}`);
+        } else if (file.type === "video") {
+            router.push(`/video?query=${file.name}`);
+        } else {
+            router.push(`/${file.type}s?query=${file.name}`);
+        }
     }
 
     const resetSearch = () => {

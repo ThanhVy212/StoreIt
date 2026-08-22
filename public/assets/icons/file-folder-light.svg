@@ -1,0 +1,83 @@
+<svg width="241" height="118" viewBox="0 0 241 118" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Card Background -->
+    <path
+            d="M15 60C15 32.3858 37.3858 10 65 10H241V118H15V60Z"
+            fill="#F2F4F8"
+    />
+
+    <!-- Yellow Shadow -->
+    <g opacity="0.4" filter="url(#filter0_f_folder)">
+        <circle cx="48" cy="48" r="33" fill="#F9D976"/>
+    </g>
+
+    <!-- Main Yellow Badge -->
+    <circle cx="48" cy="43" r="33" fill="#F9D976"/>
+
+    <!-- Folder Icon on Badge -->
+    <g transform="translate(36, 31) scale(0.55)">
+        <path
+                d="M19.125 7.5H7.875C5.80393 7.5 4.125 9.17893 4.125 11.25V33.75C4.125 35.8211 5.80393 37.5 7.875 37.5H37.125C39.1961 37.5 40.875 35.8211 40.875 33.75V15C40.875 12.9289 39.1961 11.25 37.125 11.25H22.875L19.125 7.5Z"
+                fill="white"
+                opacity="0.8"
+        />
+
+        <rect
+                x="9.5"
+                y="11.5"
+                width="26"
+                height="15"
+                rx="2"
+                fill="white"
+                opacity="0.5"
+        />
+
+        <path
+                d="M4.125 18H40.875L37.5 35.5C37.2 36.65 36.15 37.5 35 37.5H10C8.85 37.5 7.8 36.65 7.5 35.5L4.125 18Z"
+                fill="white"
+        />
+    </g>
+
+    <!-- Decorative Pattern/Mask -->
+    <mask
+            id="mask0_folder"
+            style="mask-type:alpha"
+            maskUnits="userSpaceOnUse"
+            x="15"
+            y="32"
+            width="226"
+            height="86"
+    >
+        <rect x="15" y="32" width="226" height="86" fill="#D9D9D9"/>
+    </mask>
+
+    <g mask="url(#mask0_folder)">
+        <path
+                d="M15.1325 132.681V114.105C14.3273 105.471 16.2976 88.3456 46.836 86.2132C74.8842 84.2548 80.8534 80.3014 95.5529 54.5306C107.653 33.3174 126.126 32.9157 143.043 32.5477C145.259 32.4995 147.449 32.4519 149.594 32.3582C160.963 31.8613 198.081 31.802 223.5 32.0005C252 32 241 29.7101 241 40.5007V224.287C241 235.175 232.146 244.001 221.225 244.001H34.775C23.8536 244.001 15 235.175 15 224.287V132.681H15.1325Z"
+                fill="white"
+        />
+    </g>
+
+    <defs>
+        <filter
+                id="filter0_f_folder"
+                x="0.875"
+                y="0.875"
+                width="94.25"
+                height="94.25"
+                filterUnits="userSpaceOnUse"
+                color-interpolation-filters="sRGB"
+        >
+            <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+            <feBlend
+                    mode="normal"
+                    in="SourceGraphic"
+                    in2="BackgroundImageFix"
+                    result="shape"
+            />
+            <feGaussianBlur
+                    stdDeviation="7.0625"
+                    result="effect1_foregroundBlur_folder"
+            />
+        </filter>
+    </defs>
+</svg>

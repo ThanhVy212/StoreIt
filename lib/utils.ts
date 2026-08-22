@@ -71,13 +71,13 @@ export const getFileType = (fileName: string) => {
   ];
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
   const videoExtensions = ['mp4', 'avi', 'mov', 'mkv', 'webm'];
-  const audioExtensions = ['mp3', 'wav', 'ogg', 'flac'];
+  const audioExtensions = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'wma', 'm4a', 'aiff', 'alac'];
 
   if (documentExtensions.includes(extension))
     return { type: 'document', extension };
   if (imageExtensions.includes(extension)) return { type: 'image', extension };
   if (videoExtensions.includes(extension)) return { type: 'video', extension };
-  if (audioExtensions.includes(extension)) return { type: 'audio', extension };
+  if (audioExtensions.includes(extension)) return { type: 'other', extension };
 
   return { type: 'other', extension };
 };
@@ -194,17 +194,15 @@ export const getFileIcon = (
       return '/assets/icons/file-video.svg';
       // Audio
     case 'mp3':
-    case 'mpeg':
     case 'wav':
-    case 'aac':
-    case 'flac':
     case 'ogg':
+    case 'flac':
+    case 'aac':
     case 'wma':
     case 'm4a':
     case 'aiff':
     case 'alac':
       return '/assets/icons/file-audio.svg';
-
     default:
       switch (type) {
         case 'image':
@@ -213,8 +211,6 @@ export const getFileIcon = (
           return '/assets/icons/file-document.svg';
         case 'video':
           return '/assets/icons/file-video.svg';
-        case 'audio':
-          return '/assets/icons/file-audio.svg';
         default:
           return '/assets/icons/file-other.svg';
       }
@@ -290,13 +286,6 @@ export const getUsageSummary = (totalSpace: any) => {
       url: '/video',
     },
     {
-      title: 'Audio',
-      size: totalSpace.audio?.size || 0,
-      latestDate: totalSpace.audio?.latestDate || '',
-      icon: '/assets/icons/file-audio-light.svg',
-      url: '/audio',
-    },
-    {
       title: 'Others',
       size: totalSpace.other?.size || 0,
       latestDate: totalSpace.other?.latestDate || '',
@@ -313,15 +302,12 @@ export const getFileTypesParams = (type: string) => {
     case 'images':
       return ['image'];
     case 'media':
-      return ['video', 'audio'];
+      return ['video'];
     case 'video':
     case 'videos':
       return ['video'];
-    case 'audio':
-    case 'audios':
-      return ['audio'];
     case 'others':
-      return ['other'];
+      return ['other', 'audio'];
     default:
       return ['document'];
   }
