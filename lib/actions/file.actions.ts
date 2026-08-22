@@ -9,7 +9,7 @@ import {revalidatePath} from "next/cache";
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import {UserRow} from "@/types/db.types";
 
-export const uploadFile = async ({file, ownerId, accountId, path}: UploadFileProps) => {
+export const uploadFile = async ({file, ownerId, accountId, path, folderId}: UploadFileProps) => {
     const { storage, tablesDB } = await createAdminClient();
 
     try {
@@ -35,6 +35,7 @@ export const uploadFile = async ({file, ownerId, accountId, path}: UploadFilePro
             users: [],
             bucketFileId: bucketFile.$id,
             trashed: false,
+            folderId: folderId || null,
         }
 
         const newFile = await tablesDB
@@ -70,6 +71,7 @@ export const saveFileRecord = async ({
     ownerId,
     accountId,
     path,
+    folderId,
 }: SaveFileRecordProps) => {
     const { storage, tablesDB } = await createAdminClient();
 
@@ -88,6 +90,7 @@ export const saveFileRecord = async ({
             users: [],
             bucketFileId,
             trashed: false,
+            folderId: folderId || null,
         };
 
         const newFile = await tablesDB
@@ -124,7 +127,8 @@ const createQueries = (
     limit?: number,
     page?: number,
     onlyOwner?: boolean,
-    trashed = false
+    trashed = false,
+    folderId?: string | null
 ) => {
     const userQuery = onlyOwner
         ? Query.equal("owner", [currentUser.$id])
@@ -144,6 +148,12 @@ const createQueries = (
 
     if (types.length > 0) {
         queries.push(Query.equal("type", types));
+    }
+
+    if (folderId === null) {
+        queries.push(Query.isNull("folderId"));
+    } else if (folderId !== undefined) {
+        queries.push(Query.equal("folderId", [folderId]));
     }
 
     if (searchText) {
@@ -173,7 +183,7 @@ const createQueries = (
 
 const FILES_BATCH_SIZE = 100;
 
-export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit, page = 1, fetchAll, onlyOwner, trashed = false}: GetFilesProps) => {
+export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-desc", limit, page = 1, fetchAll, onlyOwner, trashed = false, folderId}: GetFilesProps) => {
     const {tablesDB} = await createAdminClient();
 
     try {
@@ -195,7 +205,8 @@ export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-
                     queryLimit,
                     queryPage,
                     onlyOwner,
-                    trashed
+                    trashed,
+                    folderId
                 ),
             });
 
@@ -362,6 +373,7 @@ const setFilesTrashed = async (fileIds: string[], trashed: boolean, path: string
     revalidatePath(path);
     revalidatePath("/trash");
     revalidatePath("/");
+    revalidatePath("/folders");
 
     return parseStringify({ status: "success" });
 };
@@ -473,14 +485,13 @@ export const getTotalSpaceUsed = async () => {
             image: { size: 0, latestDate: "" },
             document: { size: 0, latestDate: "" },
             video: { size: 0, latestDate: "" },
-            audio: { size: 0, latestDate: "" },
             other: { size: 0, latestDate: "" },
             used: 0,
             all: 2 * 1024 * 1024 * 1024, // 2GB in bytes
         };
 
         files.rows.forEach((file: any) => {
-            const fileType = file.type as FileType;
+            const fileType = (file.type === 'audio' ? 'other' : file.type) as 'image' | 'document' | 'video' | 'other';
             const fileSize = file.size || 0;
 
             if (totalSpace[fileType]) {
@@ -504,7 +515,6 @@ export const getTotalSpaceUsed = async () => {
             image: { size: 0, latestDate: "" },
             document: { size: 0, latestDate: "" },
             video: { size: 0, latestDate: "" },
-            audio: { size: 0, latestDate: "" },
             other: { size: 0, latestDate: "" },
             used: 0,
             all: 2 * 1024 * 1024 * 1024,

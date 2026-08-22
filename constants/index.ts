@@ -5,9 +5,9 @@ export const navItems = [
         url: '/',
     },
     {
-        name: 'Documents',
-        icon: '/assets/icons/documents.svg',
-        url: '/documents',
+        name: 'Folders',
+        icon: '/assets/icons/folder.svg',
+        url: '/folders',
     },
     {
         name: 'Images',
@@ -20,9 +20,9 @@ export const navItems = [
         url: '/video',
     },
     {
-        name: 'Audio',
-        icon: '/assets/icons/audio.svg',
-        url: '/audio',
+        name: 'Documents',
+        icon: '/assets/icons/documents.svg',
+        url: '/documents',
     },
     {
         name: 'Others',
@@ -97,11 +97,6 @@ export const trashActionsDropdownItems = [
         label: 'Details',
         icon: '/assets/icons/info.svg',
         value: 'details',
-    },
-    {
-        label: 'Download',
-        icon: '/assets/icons/download.svg',
-        value: 'download',
     },
     {
         label: 'Delete',

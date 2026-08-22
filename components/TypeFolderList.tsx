@@ -1,13 +1,12 @@
 'use client';
 import React, { useState } from 'react';
-import FileCard from '@/components/FileCard';
-import FileTableList from '@/components/FileTableList';
+import FolderCard from '@/components/FolderCard';
+import FolderTableList from '@/components/FolderTableList';
 import { useFileView } from '@/components/FileViewProvider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { constructDownloadUrl, downloadFile } from '@/lib/utils';
-import { deleteFiles, moveFilesToTrash, restoreFiles } from '@/lib/actions/file.actions';
+import { moveFoldersToTrash, restoreFolders, deleteFolders } from '@/lib/actions/folder.actions';
 import { usePathname } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import {
@@ -17,54 +16,65 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {TypeFileListProps} from "@/types/db.types";
+import { FolderRow } from '@/types/db.types';
 
-const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail }: TypeFileListProps) => {
+interface TypeFolderListProps {
+    folders: FolderRow[];
+    fileCounts: Record<string, number>;
+    isTrash?: boolean;
+    currentUserId?: string;
+    currentUserEmail?: string;
+}
+
+const TypeFolderList = ({
+    folders,
+    fileCounts,
+    isTrash = false,
+    currentUserId,
+    currentUserEmail,
+}: TypeFolderListProps) => {
     const { viewMode } = useFileView();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const path = usePathname();
-    const isAllSelected = files.length > 0 && selectedIds.length === files.length;
-    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < files.length;
+
+    const isAllSelected = folders.length > 0 && selectedIds.length === folders.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < folders.length;
+
     const handleToggleSelectAll = () => {
         if (isAllSelected) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(files.map((file) => file.$id));
+            setSelectedIds(folders.map((f) => f.$id));
         }
     };
-    const handleToggleSelect = (fileId: string) => {
+
+    const handleToggleSelect = (folderId: string) => {
         setSelectedIds((prev) =>
-            prev.includes(fileId) ? prev.filter((id) => id !== fileId) : [...prev, fileId]
+            prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId]
         );
     };
+
     const handleClearSelection = () => {
         setSelectedIds([]);
-    };
-    const handleDownloadSelected = async () => {
-        const selectedFiles = files.filter((f) => selectedIds.includes(f.$id));
-        for (const file of selectedFiles) {
-            const url = constructDownloadUrl(file.bucketFileId);
-            await downloadFile(url, file.name);
-        }
     };
 
     const handleMoveSelectedToTrash = async () => {
         if (selectedIds.length === 0) return;
         setIsUpdating(true);
         try {
-            await moveFilesToTrash({ fileIds: selectedIds, path });
+            await moveFoldersToTrash({ folderIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Moved ${selectedIds.length} file${selectedIds.length > 1 ? 's' : ''} to trash.`,
+                description: `Moved ${selectedIds.length} folder${selectedIds.length > 1 ? 's' : ''} to trash.`,
             });
             setSelectedIds([]);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to move files to trash. Please try again.',
+                description: 'Failed to move folders to trash. Please try again.',
             });
         } finally {
             setIsUpdating(false);
@@ -75,16 +85,16 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
         if (selectedIds.length === 0) return;
         setIsUpdating(true);
         try {
-            await restoreFiles({ fileIds: selectedIds, path });
+            await restoreFolders({ folderIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Restored ${selectedIds.length} file${selectedIds.length > 1 ? 's' : ''}.`,
+                description: `Restored ${selectedIds.length} folder${selectedIds.length > 1 ? 's' : ''}.`,
             });
             setSelectedIds([]);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to restore files. Please try again.',
+                description: 'Failed to restore folders. Please try again.',
             });
         } finally {
             setIsUpdating(false);
@@ -92,35 +102,32 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
     };
 
     const handleDeleteSelected = async () => {
-        const selectedFiles = files.filter((f) => selectedIds.includes(f.$id));
-        if (selectedFiles.length === 0) return;
+        if (selectedIds.length === 0) return;
         setIsDeleting(true);
         try {
-            await deleteFiles({
-                files: selectedFiles.map((f) => ({
-                    fileId: f.$id,
-                    bucketFileId: f.bucketFileId,
-                })),
-                path,
-            });
+            await deleteFolders({ folderIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Permanently deleted ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}.`,
+                description: `Permanently deleted ${selectedIds.length} folder${selectedIds.length > 1 ? 's' : ''}.`,
             });
             setSelectedIds([]);
             setIsDeleteDialogOpen(false);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to delete selected files. Please try again.',
+                description: 'Failed to delete selected folders. Please try again.',
             });
         } finally {
             setIsDeleting(false);
         }
     };
 
-    if (files.length === 0) {
-        return <p className="empty-list">{isTrash ? 'Trash is empty' : 'No files uploaded'}</p>;
+    if (folders.length === 0) {
+        return (
+            <p className="empty-list">
+                {isTrash ? 'Trash is empty' : 'No folders created'}
+            </p>
+        );
     }
 
     return (
@@ -132,42 +139,23 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                         checked={isAllSelected}
                         indeterminate={isIndeterminate}
                         onCheckedChange={handleToggleSelectAll}
-                        id="select-all-files"
+                        id="select-all-folders"
                     />
-
                     <label
-                        htmlFor="select-all-files"
+                        htmlFor="select-all-folders"
                         className="body-2 selection-toolbar-label"
                     >
                         Select All{' '}
                         {selectedIds.length > 0 && (
                             <span className="selection-toolbar-count">
-                    ({selectedIds.length} / {files.length} selected)
-                </span>
+                                ({selectedIds.length} / {folders.length} selected)
+                            </span>
                         )}
                     </label>
                 </div>
 
                 {selectedIds.length > 0 && (
                     <div className="selection-toolbar-actions">
-                        {!isTrash && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="selection-toolbar-download"
-                                onClick={handleDownloadSelected}
-                            >
-                                <Image
-                                    src="/assets/icons/download.svg"
-                                    alt="download"
-                                    width={16}
-                                    height={16}
-                                />
-                                <span>Download ({selectedIds.length})</span>
-                            </Button>
-                        )}
-
                         {isTrash ? (
                             <>
                                 <Button
@@ -236,23 +224,25 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
 
             {viewMode === 'grid' ? (
                 <section className="file-list">
-                    {files.map((file) => (
-                        <FileCard
-                            key={file.$id}
-                            file={file}
+                    {folders.map((folder) => (
+                        <FolderCard
+                            key={folder.$id}
+                            folder={folder}
+                            fileCount={fileCounts[folder.$id] || 0}
                             showCheckbox={true}
-                            isSelected={selectedIds.includes(file.$id)}
-                            onToggleSelect={() => handleToggleSelect(file.$id)}
+                            isSelected={selectedIds.includes(folder.$id)}
+                            onToggleSelect={() => handleToggleSelect(folder.$id)}
                             currentUserId={currentUserId}
                             currentUserEmail={currentUserEmail}
                         />
                     ))}
                 </section>
             ) : (
-                <FileTableList
-                    files={files}
+                <FolderTableList
+                    folders={folders}
+                    fileCounts={fileCounts}
                     selectedIds={selectedIds}
-                    onToggleSelect={(file) => handleToggleSelect(file.$id)}
+                    onToggleSelect={(folder) => handleToggleSelect(folder.$id)}
                     currentUserId={currentUserId}
                     currentUserEmail={currentUserEmail}
                 />
@@ -262,14 +252,14 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                 <DialogContent className="shad-dialog button">
                     <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                         <DialogTitle className="text-center text-light-100">
-                            Delete {selectedIds.length} file{selectedIds.length > 1 ? 's' : ''} forever
+                            Delete {selectedIds.length} folder{selectedIds.length > 1 ? 's' : ''} forever
                         </DialogTitle>
                         <p className="delete-confirmation text-center">
                             Are you sure you want to permanently delete{' '}
                             <span className="font-semibold text-dark-200">
-                                {selectedIds.length} selected file{selectedIds.length > 1 ? 's' : ''}
+                                {selectedIds.length} selected folder{selectedIds.length > 1 ? 's' : ''}
                             </span>
-                            ? This action cannot be undone.
+                            ? All contents will also be deleted. This action cannot be undone.
                         </p>
                     </DialogHeader>
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
@@ -302,4 +292,5 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
         </div>
     );
 };
-export default TypeFileList;
+
+export default TypeFolderList;

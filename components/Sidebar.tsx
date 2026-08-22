@@ -11,6 +11,13 @@ import {cn} from "@/lib/utils";
 const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
     const pathname = usePathname();
 
+    const isActive = (url: string, name: string) => {
+        if (name === 'Folders') {
+            return pathname === url || pathname.startsWith('/folders');
+        }
+        return pathname === url;
+    };
+
     return (
         <aside className="sidebar">
             <Link href="/">
@@ -33,20 +40,23 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
 
             <nav className="sidebar-nav">
                 <ul className="flex flex-1 flex-col gap-6">
-                    {navItems.map(({url, name, icon}) => (
-                        <Link key={name} href={url} className="lg:w-full">
-                            <li className={cn("sidebar-nav-item", pathname === url && "shad-active")}>
-                                <Image
-                                    src={icon}
-                                    alt={name}
-                                    width={24}
-                                    height={24}
-                                    className={cn("nav-icon", pathname === url && "nav-icon-active")}
-                                />
-                                <p className="hidden lg:block">{name}</p>
-                            </li>
-                        </Link>
-                    ))}
+                    {navItems.map(({url, name, icon}) => {
+                        const active = isActive(url, name);
+                        return (
+                            <Link key={name} href={url} className="lg:w-full">
+                                <li className={cn("sidebar-nav-item", active && "shad-active")}>
+                                    <Image
+                                        src={icon}
+                                        alt={name}
+                                        width={24}
+                                        height={24}
+                                        className={cn("nav-icon", active && "nav-icon-active")}
+                                    />
+                                    <p className="hidden lg:block">{name}</p>
+                                </li>
+                            </Link>
+                        );
+                    })}
                 </ul>
             </nav>
 

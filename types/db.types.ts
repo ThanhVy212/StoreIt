@@ -17,6 +17,16 @@ export type FileRow = Models.Row & {
     size?: number | null;
     users?: string[] | null;
     trashed?: boolean | null;
+    folderId?: string | null;
+};
+
+export type FolderRow = Models.Row & {
+    name: string;
+    accountId: string;
+    owner?: UserRow | null;
+    parentFolderId?: string | null;
+    users?: string[] | null;
+    trashed?: boolean | null;
 };
 
 export interface ShareInputProps {
@@ -33,6 +43,21 @@ export type FileViewMode = 'grid' | 'list';
 export interface TypeFileListProps {
     files: FileRow[];
     isTrash?: boolean;
+    currentUserId?: string;
+    currentUserEmail?: string;
+}
+
+export interface FolderCardProps {
+    folder: FolderRow;
+    fileCount: number;
+    currentUserId?: string;
+    currentUserEmail?: string;
+}
+
+export interface FolderTableListProps {
+    folders: FolderRow[];
+    selectedIds: string[];
+    onToggleSelect: (folder: FolderRow) => void;
     currentUserId?: string;
     currentUserEmail?: string;
 }
