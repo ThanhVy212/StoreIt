@@ -2,11 +2,49 @@
 
 import { createAdminClient } from "@/lib/appwrite";
 import { appwriteConfig } from "@/lib/appwrite/config";
-import { ID, Query } from "node-appwrite";
+import { ID, Query, TablesDB } from "node-appwrite";
 import { parseStringify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/actions/user.actions";
-import { UserRow } from "@/types/db.types";
+import { FolderRow, UserRow } from "@/types/db.types";
+
+const getUniqueFolderName = async (
+    tablesDB: TablesDB,
+    name: string,
+    parentFolderId: string | null,
+    accountId: string
+): Promise<string> => {
+    const queries = [
+        Query.equal("accountId", [accountId]),
+        parentFolderId === null
+            ? Query.isNull("parentFolderId")
+            : Query.equal("parentFolderId", [parentFolderId]),
+        Query.equal("trashed", [false]),
+    ];
+
+    const existingFolders = await tablesDB.listRows({
+        databaseId: appwriteConfig.databaseId,
+        tableId: appwriteConfig.foldersTableId,
+        queries,
+    });
+
+    const existingNames = new Set(
+        (existingFolders.rows as unknown as FolderRow[]).map(
+            (folder) => folder.name
+        )
+    );
+
+    if (!existingNames.has(name)) {
+        return name;
+    }
+
+    let counter = 1;
+    while (existingNames.has(`${name} (${counter})`)) {
+        counter++;
+    }
+
+    return `${name} (${counter})`;
+};
 
 export const createFolder = async ({
     name,
@@ -24,8 +62,15 @@ export const createFolder = async ({
     const { tablesDB } = await createAdminClient();
 
     try {
-        const folder = {
+        const uniqueName = await getUniqueFolderName(
+            tablesDB,
             name,
+            parentFolderId || null,
+            accountId
+        );
+
+        const folder = {
+            name: uniqueName,
             accountId,
             owner,
             parentFolderId: parentFolderId || null,
@@ -127,6 +172,9 @@ export const getFolders = async ({
         const currentUser = await getCurrentUser();
         if (!currentUser) throw new Error("No user found");
 
+        const isSizeSort = sort.startsWith("size-");
+        const dbSort = isSizeSort ? "$createdAt-desc" : sort;
+
         const listFolders = (queryLimit?: number, queryPage?: number) =>
             tablesDB.listRows({
                 databaseId: appwriteConfig.databaseId,
@@ -134,7 +182,7 @@ export const getFolders = async ({
                 queries: createFolderQueries(
                     currentUser,
                     searchText,
-                    sort,
+                    dbSort,
                     queryLimit,
                     queryPage,
                     onlyOwner,
@@ -159,12 +207,45 @@ export const getFolders = async ({
                 currentPage += 1;
             }
 
+            if (isSizeSort && allRows.length > 0) {
+                const sizePromises = allRows.map(async (folder: any) => ({
+                    id: folder.$id,
+                    size: await getFolderTotalSize(tablesDB, folder.$id),
+                }));
+                const sizes = await Promise.all(sizePromises);
+                const sizeMap = new Map(sizes.map((s) => [s.id, s.size]));
+                const [, order] = sort.split("-");
+                allRows.sort((a: any, b: any) => {
+                    const sizeA = sizeMap.get(a.$id) ?? 0;
+                    const sizeB = sizeMap.get(b.$id) ?? 0;
+                    return order === "asc" ? sizeA - sizeB : sizeB - sizeA;
+                });
+            }
+
             return parseStringify({ rows: allRows, total: totalCount });
         }
 
         const folders = await listFolders(limit, page);
+        let rows = folders.rows ?? [];
+
+        if (isSizeSort && rows.length > 0) {
+            const sizePromises = rows.map(async (folder: any) => ({
+                id: folder.$id,
+                size: await getFolderTotalSize(tablesDB, folder.$id),
+            }));
+            const sizes = await Promise.all(sizePromises);
+            const sizeMap = new Map(sizes.map((s) => [s.id, s.size]));
+            const [, order] = sort.split("-");
+            rows.sort((a: any, b: any) => {
+                const sizeA = sizeMap.get(a.$id) ?? 0;
+                const sizeB = sizeMap.get(b.$id) ?? 0;
+                return order === "asc" ? sizeA - sizeB : sizeB - sizeA;
+            });
+        }
+
         return parseStringify({
             ...folders,
+            rows,
             pagination: limit
                 ? {
                     page,
@@ -206,7 +287,6 @@ export const getFolderFileCount = async (folderId: string) => {
             queries: [
                 Query.equal("folderId", [folderId]),
                 Query.equal("trashed", [false]),
-                Query.limit(0),
             ],
         });
         return result.total;
@@ -216,29 +296,104 @@ export const getFolderFileCount = async (folderId: string) => {
     }
 };
 
-export const getFolderFileCountForMultiple = async (folderIds: string[]) => {
+export const getFolderFileCountForMultiple = async (folderIds: string[], trashed = false) => {
     const { tablesDB } = await createAdminClient();
     const counts: Record<string, number> = {};
+
+    const countFilesRecursively = async (folderId: string): Promise<number> => {
+        const result = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            queries: [
+                Query.equal("folderId", [folderId]),
+                Query.equal("trashed", [trashed]),
+            ],
+        });
+        let total = result.total;
+
+        const subfolders = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.foldersTableId,
+            queries: [
+                Query.equal("parentFolderId", [folderId]),
+                Query.equal("trashed", [trashed]),
+                Query.limit(100),
+            ],
+        });
+
+        for (const subfolder of subfolders.rows ?? []) {
+            total += await countFilesRecursively(subfolder.$id);
+        }
+
+        return total;
+    };
 
     try {
         await Promise.all(
             folderIds.map(async (folderId) => {
-                const result = await tablesDB.listRows({
-                    databaseId: appwriteConfig.databaseId,
-                    tableId: appwriteConfig.filesTableId,
-                    queries: [
-                        Query.equal("folderId", [folderId]),
-                        Query.equal("trashed", [false]),
-                        Query.limit(0),
-                    ],
-                });
-                counts[folderId] = result.total;
+                counts[folderId] = await countFilesRecursively(folderId);
             })
         );
         return counts;
     } catch (err) {
         console.log("Failed to get folder file counts", err);
         return counts;
+    }
+};
+
+const getFolderTotalSize = async (
+    tablesDB: TablesDB,
+    folderId: string
+): Promise<number> => {
+    let totalSize = 0;
+    let offset = 0;
+
+    while (true) {
+        const files = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.filesTableId,
+            queries: [
+                Query.equal("folderId", [folderId]),
+                Query.equal("trashed", [false]),
+                Query.select(["size"]),
+                Query.limit(100),
+                Query.offset(offset),
+            ],
+        });
+
+        for (const file of files.rows ?? []) {
+            totalSize += (file as any).size || 0;
+        }
+
+        if ((files.rows?.length ?? 0) < 100) break;
+        offset += 100;
+    }
+
+    const subfolders = await tablesDB.listRows({
+        databaseId: appwriteConfig.databaseId,
+        tableId: appwriteConfig.foldersTableId,
+        queries: [
+            Query.equal("parentFolderId", [folderId]),
+            Query.equal("trashed", [false]),
+            Query.limit(100),
+        ],
+    });
+
+    for (const subfolder of subfolders.rows ?? []) {
+        totalSize += await getFolderTotalSize(tablesDB, subfolder.$id);
+    }
+
+    return totalSize;
+};
+
+export const getFolderSize = async (folderId: string) => {
+    const { tablesDB } = await createAdminClient();
+
+    try {
+        return await getFolderTotalSize(tablesDB, folderId);
+    } catch (err) {
+        console.log("Failed to get folder size", err);
+        return 0;
     }
 };
 

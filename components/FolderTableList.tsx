@@ -29,6 +29,21 @@ const FolderTableRow = ({
         ? '/assets/icons/file-items-folder.svg'
         : '/assets/icons/file-empty-folder.svg';
 
+    const isTrashed = Boolean(folder.trashed);
+
+    const nameContent = (
+        <>
+            <Image
+                src={folderIcon}
+                alt=""
+                width={24}
+                height={24}
+                className="file-table-icon"
+            />
+            <span className="file-table-name">{folder.name}</span>
+        </>
+    );
+
     return (
         <div className={`file-table-row ${isSelected ? 'file-table-row-selected' : ''}`}>
             <div
@@ -44,19 +59,18 @@ const FolderTableRow = ({
                 )}
             </div>
 
-            <Link
-                href={`/folders/${folder.$id}`}
-                className="file-table-cell file-table-cell-name"
-            >
-                <Image
-                    src={folderIcon}
-                    alt=""
-                    width={24}
-                    height={24}
-                    className="file-table-icon"
-                />
-                <span className="file-table-name">{folder.name}</span>
-            </Link>
+            {isTrashed ? (
+                <div className="file-table-cell file-table-cell-name">
+                    {nameContent}
+                </div>
+            ) : (
+                <Link
+                    href={`/folders/${folder.$id}`}
+                    className="file-table-cell file-table-cell-name"
+                >
+                    {nameContent}
+                </Link>
+            )}
 
             <p className="file-table-cell file-table-cell-owner">
                 <Image

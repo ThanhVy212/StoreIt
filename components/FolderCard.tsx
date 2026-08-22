@@ -26,8 +26,32 @@ const FolderCard = ({
         ? '/assets/icons/file-items-folder.svg'
         : '/assets/icons/file-empty-folder.svg';
 
+    const isTrashed = Boolean(folder.trashed);
+
+    const folderIconElement = (
+        <div className="!size-20 flex items-center justify-center">
+            <Image
+                src={folderIcon}
+                alt="folder"
+                width={80}
+                height={80}
+                className="!size-full object-contain"
+            />
+        </div>
+    );
+
+    const detailsContent = (
+        <div className="file-card-details">
+            <p className="subtitle-2 line-clamp-1">{folder.name}</p>
+            <FormattedDateTime date={folder.$createdAt} className="body-2 text-light-100" />
+            <p className="caption line-clamp-1 text-light-200">
+                {fileCount} file{fileCount !== 1 ? 's' : ''}
+            </p>
+        </div>
+    );
+
     return (
-        <div className={cn('file-card relative group transition-all', isSelected && 'file-card-selected')}>
+        <div className={cn('file-card relative group transition-all', isSelected && 'file-card-selected', isTrashed && 'opacity-60')}>
             <div className="flex justify-between items-start">
                 <div className="flex items-start gap-3">
                     {showCheckbox && (
@@ -40,17 +64,7 @@ const FolderCard = ({
                         </div>
                     )}
 
-                    <Link href={`/folders/${folder.$id}`}>
-                        <div className="!size-20 flex items-center justify-center">
-                            <Image
-                                src={folderIcon}
-                                alt="folder"
-                                width={80}
-                                height={80}
-                                className="!size-full object-contain"
-                            />
-                        </div>
-                    </Link>
+                    {isTrashed ? folderIconElement : <Link href={`/folders/${folder.$id}`}>{folderIconElement}</Link>}
                 </div>
 
                 <div className="flex flex-col items-end justify-between self-stretch">
@@ -58,13 +72,7 @@ const FolderCard = ({
                 </div>
             </div>
 
-            <Link href={`/folders/${folder.$id}`} className="file-card-details">
-                <p className="subtitle-2 line-clamp-1">{folder.name}</p>
-                <FormattedDateTime date={folder.$createdAt} className="body-2 text-light-100" />
-                <p className="caption line-clamp-1 text-light-200">
-                    {fileCount} file{fileCount !== 1 ? 's' : ''}
-                </p>
-            </Link>
+            {isTrashed ? detailsContent : <Link href={`/folders/${folder.$id}`}>{detailsContent}</Link>}
         </div>
     );
 };

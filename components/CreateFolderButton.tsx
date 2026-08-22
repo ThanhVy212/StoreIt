@@ -71,7 +71,7 @@ const CreateFolderButton = ({
                 className="flex items-center gap-2 bg-brand text-white hover:bg-brand-100"
             >
                 <Image
-                    src="/assets/icons/file-items-folder.svg"
+                    src="/assets/icons/folder.svg"
                     alt="create folder"
                     width={20}
                     height={20}

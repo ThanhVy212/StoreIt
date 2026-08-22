@@ -25,8 +25,9 @@ import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { deleteFolder, getFolderFilesForDownload, moveFolderToTrash, renameFolder, restoreFolder, updateFolderUsers } from '@/lib/actions/folder.actions';
-import { constructDownloadUrl, downloadFile, formatDateTime } from '@/lib/utils';
+import { constructDownloadUrl, convertFileSize, downloadFile, formatDateTime } from '@/lib/utils';
 import JSZip from 'jszip';
+import { getFolderSize } from '@/lib/actions/folder.actions';
 
 const FolderDetails = ({
     folder,
@@ -35,8 +36,28 @@ const FolderDetails = ({
     folder: FolderRow;
     fileCount: number;
 }) => {
+    const [totalSize, setTotalSize] = useState<number | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        getFolderSize(folder.$id).then((size) => {
+            if (!cancelled) setTotalSize(size);
+        });
+        return () => { cancelled = true; };
+    }, [folder.$id]);
+
     return (
         <div className="space-y-4 px-2 pt-2">
+            <div className="flex gap-2">
+                <p className="file-details-label text-left shrink-0">Name:</p>
+                <p className="file-details-value text-left">{folder.name}</p>
+            </div>
+            <div className="flex gap-2">
+                <p className="file-details-label text-left shrink-0">Size:</p>
+                <p className="file-details-value text-left">
+                    {totalSize !== null ? convertFileSize(totalSize) : 'Loading...'}
+                </p>
+            </div>
             <div className="flex gap-2">
                 <p className="file-details-label text-left shrink-0">Files:</p>
                 <p className="file-details-value text-left">{fileCount}</p>

@@ -225,6 +225,22 @@
 
 .main-content {
   @apply flex h-full min-h-0 flex-1 flex-col overflow-auto bg-light-400 px-5 py-7 sm:mr-7 sm:rounded-[30px] md:mb-7 md:px-9 md:py-10;
+
+  &::-webkit-scrollbar {
+    @apply h-[3px] w-[6px] rounded-[50px];
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply rounded-[50px] bg-light-300;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand;
+  }
 }
 
 /*DASHBOARD*/
@@ -277,7 +293,23 @@
 /*TYPE PAGE*/
 
 .page-container {
-  @apply mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col items-stretch gap-8 overflow-hidden;
+  @apply mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col items-stretch gap-8 overflow-y-auto;
+
+  &::-webkit-scrollbar {
+    @apply h-[3px] w-[6px] rounded-[50px];
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply rounded-[50px] bg-light-300;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand;
+  }
 }
 
 .total-size-section {
@@ -289,7 +321,7 @@
 }
 
 .file-list {
-  @apply grid min-h-0 w-full flex-1 grid-cols-1 content-start gap-6 overflow-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  @apply grid min-h-0 w-full flex-1 grid-cols-1 content-start gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
 }
 
 .file-table {

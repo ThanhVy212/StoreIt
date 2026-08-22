@@ -43,7 +43,8 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
         });
         trashedFolders = folders?.rows ?? [];
         trashedFolderFileCounts = await getFolderFileCountForMultiple(
-            trashedFolders.map((f: any) => f.$id)
+            trashedFolders.map((f: any) => f.$id),
+            true
         );
     }
 
