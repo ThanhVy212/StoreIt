@@ -14,10 +14,11 @@ import { FileRow } from "@/types/db.types";
 export const dynamic = "force-dynamic";
 
 const Dashboard = async () => {
-    const recentFiles = await getFiles({ types: [], limit: 8, onlyOwner: true, folderId: null });
+    const recentFiles = await getFiles({ types: [], limit: 8, onlyOwner: true });
     const totalSpace = await getTotalSpaceUsed();
-    const folders = await getFolders({ onlyOwner: true, trashed: false, limit: 200 });
+    const folders = await getFolders({ onlyOwner: true, trashed: false, fetchAll: true, parentFolderId: null });
     const folderRows = folders?.rows ?? [];
+    const totalFolders = folders?.total ?? folderRows.length;
     const folderFileCounts = await getFolderFileCountForMultiple(
         folderRows.map((f: any) => f.$id)
     );
@@ -76,7 +77,7 @@ const Dashboard = async () => {
                                     className="summary-type-icon"
                                 />
                                 <h4 className="summary-type-size">
-                                    {folderRows.length}
+                                    {totalFolders}
                                 </h4>
                             </div>
                             <h5 className="summary-type-title">Folders</h5>

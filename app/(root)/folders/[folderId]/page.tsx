@@ -1,6 +1,12 @@
 import Sort from "@/components/Sort";
 import { getFiles } from "@/lib/actions/file.actions";
-import { getFolders, getFolderById, getFolderFileCountForMultiple, getFolderFileCount } from "@/lib/actions/folder.actions";
+import {
+    getFolders,
+    getFolderById,
+    getFolderFileCountForMultiple,
+    getFolderFileCount,
+    getFolderSize
+} from "@/lib/actions/folder.actions";
 import { convertFileSize } from "@/lib/utils";
 import TypeFileList from "@/components/TypeFileList";
 import TypeFolderList from "@/components/TypeFolderList";
@@ -10,6 +16,7 @@ import { getCurrentUser } from "@/lib/actions/user.actions";
 import Link from "next/link";
 import CreateFolderButton from "@/components/CreateFolderButton";
 import FolderFileUploader from "@/components/FolderFileUploader";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +29,16 @@ const FolderDetailPage = async ({
     const sort = ((await searchParams)?.sort as string) || "$createdAt-desc";
     const currentUser = await getCurrentUser();
 
-    const folder = await getFolderById(folderId);
+    let folder;
+    try {
+        folder = await getFolderById(folderId);
+    } catch {
+        notFound();
+    }
+
+    if (!folder) notFound();
+    if (folder.owner !== currentUser?.$id) notFound();
+
     const totalFileCount = await getFolderFileCount(folderId);
 
     const files = await getFiles({
@@ -50,10 +66,7 @@ const FolderDetailPage = async ({
         subfolderRows.map((f: any) => f.$id)
     );
 
-    const totalSize = folderFiles.reduce(
-        (acc: number, file: any) => acc + (file.size || 0),
-        0
-    );
+    const totalSize = await getFolderSize(folderId);
 
     return (
         <FileViewProvider>

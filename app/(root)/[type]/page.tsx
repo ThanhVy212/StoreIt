@@ -1,7 +1,7 @@
 import Sort from "@/components/Sort";
 import { getFiles } from "@/lib/actions/file.actions";
 import { getFolders, getFolderFileCountForMultiple } from "@/lib/actions/folder.actions";
-import { FileRow } from "@/types/db.types";
+import {FileRow, FolderRow} from "@/types/db.types";
 import { convertFileSize, getFileTypesParams } from "@/lib/utils";
 import TypeFileList from "@/components/TypeFileList";
 import TypeFolderList from "@/components/TypeFolderList";
@@ -30,9 +30,8 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
         folderId: isTrash ? undefined : null,
     });
 
-    let trashedFolders: any[] = [];
+    let trashedFolders: FolderRow[] = [];
     let trashedFolderFileCounts: Record<string, number> = {};
-
     if (isTrash) {
         const folders = await getFolders({
             searchText,
@@ -41,12 +40,17 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
             trashed: true,
             onlyOwner: true,
         });
-        trashedFolders = folders?.rows ?? [];
+        const allTrashed: FolderRow[] = folders?.rows ?? [];
+        const trashedIds = new Set(allTrashed.map((f) => f.$id));
+        trashedFolders = allTrashed.filter(
+            (f) => !f.parentFolderId || !trashedIds.has(f.parentFolderId)
+        );
         trashedFolderFileCounts = await getFolderFileCountForMultiple(
-            trashedFolders.map((f: any) => f.$id),
+            trashedFolders.map((f) => f.$id),
             true
         );
     }
+
 
     const totalFiles = files?.total ?? 0;
     const totalFolders = trashedFolders.length;
