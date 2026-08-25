@@ -304,7 +304,7 @@ export const getFolderAncestors = async (folderId: string): Promise<{ id: string
 
     try {
         while (currentId) {
-            const folder = await tablesDB.getRow({
+            const folder: FolderRow = await tablesDB.getRow({
                 databaseId: appwriteConfig.databaseId,
                 tableId: appwriteConfig.foldersTableId,
                 rowId: currentId,
