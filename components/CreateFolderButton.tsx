@@ -14,6 +14,7 @@ import {
 import { toast } from '@/components/ui/toast';
 import { usePathname } from 'next/navigation';
 import { createFolder } from '@/lib/actions/folder.actions';
+import { useLocale } from '@/lib/locale-context';
 
 const CreateFolderButton = ({
     ownerId,
@@ -28,13 +29,14 @@ const CreateFolderButton = ({
     const [folderName, setFolderName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const path = usePathname();
+    const { dictionary: t } = useLocale();
 
     const handleCreate = async () => {
         const trimmedName = folderName.trim();
         if (!trimmedName) {
             toast.add({
                 type: 'error',
-                description: 'Please enter a folder name.',
+                description: t.toast.enterFolderName,
             });
             return;
         }
@@ -50,14 +52,14 @@ const CreateFolderButton = ({
             });
             toast.add({
                 type: 'success',
-                description: parentFolderId ? 'Subfolder created successfully.' : 'Folder created successfully.',
+                description: parentFolderId ? t.toast.subfolderCreated : t.toast.folderCreated,
             });
             setFolderName('');
             setIsModalOpen(false);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to create folder. Please try again.',
+                description: t.toast.failedCreateFolder,
             });
         } finally {
             setIsLoading(false);
@@ -76,18 +78,18 @@ const CreateFolderButton = ({
                     width={20}
                     height={20}
                 />
-                <span>{parentFolderId ? 'Create Subfolder' : 'Create Folder'}</span>
+                <span>{parentFolderId ? t.folders.createSubfolder : t.folders.createFolder}</span>
             </Button>
 
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="shad-dialog button">
                     <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                         <DialogTitle className="text-center text-light-100">
-                            {parentFolderId ? 'Create New Subfolder' : 'Create New Folder'}
+                            {parentFolderId ? t.folders.createNewSubfolder : t.folders.createNewFolder}
                         </DialogTitle>
                         <Input
                             type="text"
-                            placeholder="Enter folder name"
+                            placeholder={t.folders.enterFolderName}
                             value={folderName}
                             onChange={(e) => setFolderName(e.target.value)}
                             onKeyDown={(e) => {
@@ -107,14 +109,14 @@ const CreateFolderButton = ({
                             }}
                             className="modal-cancel-button"
                         >
-                            Cancel
+                            {t.actions.cancel}
                         </Button>
                         <Button
                             onClick={() => void handleCreate()}
                             className="modal-submit-button"
                             disabled={isLoading}
                         >
-                            <p>Create</p>
+                            <p>{t.common.create}</p>
                             {isLoading && (
                                 <Image
                                     src="/assets/icons/loader.svg"

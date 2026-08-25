@@ -1,6 +1,10 @@
 import Image from "next/image";
+import { getDictionary, type Locale } from "@/lib/get-dictionary";
 
-const Layout = ({children}:{children: React.ReactNode}) => {
+const Layout = async ({children, params}: {children: React.ReactNode; params: Promise<{ lang: string }>}) => {
+    const { lang } = await params;
+    const t = await getDictionary(lang as Locale);
+
     return (
         <div className="flex min-h-screen">
             <section className="bg-brand p-10 hidden w-1/2 items-center justify-center lg:flex xl:w-2/5">
@@ -14,9 +18,9 @@ const Layout = ({children}:{children: React.ReactNode}) => {
                     />
 
                     <div className="space-y-5 text-white">
-                        <h1 className="h1">Manage your files the best way</h1>
+                        <h1 className="h1">{t.auth.brandTitle}</h1>
                         <p className="body-1">
-                            This is a place where you can store all your docs.
+                            {t.auth.brandDescription}
                         </p>
                     </div>
 

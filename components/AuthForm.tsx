@@ -28,26 +28,27 @@ import { Input } from "@/components/ui/input";
 import {createAccount, signInUser} from "@/lib/actions/user.actions";
 import OTPModal from "@/components/OTPModal";
 import { toast } from "@/components/ui/toast";
+import { useLocale } from "@/lib/locale-context";
 
 type FormType = "sign-in" | "sign-up";
-
-const authFormSchema = (type: FormType) =>
-  z.object({
-    email: z.email("Please enter a valid email address."),
-
-    fullName:
-      type === "sign-up"
-        ? z
-            .string()
-            .min(2, "Full name must be at least 2 characters.")
-            .max(50, "Full name must be at most 50 characters.")
-        : z.string().optional(),
-  });
 
 const AuthForm = ({ type }: { type: FormType }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [accountId, setAccountId] = useState(null)
+  const { lang, dictionary: t } = useLocale();
+
+  const authFormSchema = (formType: FormType) =>
+    z.object({
+      email: z.email(t.validation.validEmail),
+      fullName:
+        formType === "sign-up"
+          ? z
+              .string()
+              .min(2, t.validation.fullNameMin)
+              .max(50, t.validation.fullNameMax)
+          : z.string().optional(),
+    });
 
   const formSchema = authFormSchema(type);
 
@@ -82,17 +83,25 @@ const AuthForm = ({ type }: { type: FormType }) => {
           toast.add({
             type: "success",
             description: type === "sign-up"
-              ? "Account created! An OTP has been sent to your email."
-              : "OTP sent successfully! Please check your email.",
+              ? t.toast.accountCreated
+              : t.toast.otpSent,
           });
         } else {
-          const fallbackError = type === "sign-up" ? "Failed to create account." : "Failed to sign in.";
+          const fallbackError = type === "sign-up" ? t.toast.failedCreateAccount : t.toast.somethingWrong;
           setErrorMessage(fallbackError);
         }
 
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Something went wrong.";
-      setErrorMessage(msg);
+      const msg = error instanceof Error ? error.message.toLowerCase() : "";
+      if (msg.includes("otp")) {
+        setErrorMessage(t.toast.otpVerifyFailed);
+      } else if (msg.includes("email") && msg.includes("exist")) {
+        setErrorMessage(t.toast.failedCreateAccount);
+      } else if (msg.includes("network") || msg.includes("fetch")) {
+        setErrorMessage(t.toast.somethingWrong);
+      } else {
+        setErrorMessage(error instanceof Error && error.message ? error.message : t.toast.somethingWrong);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -103,13 +112,13 @@ const AuthForm = ({ type }: { type: FormType }) => {
       <Card className="w-full sm:max-w-md">
         <CardHeader>
           <CardTitle className="form-title">
-            {type === "sign-in" ? "Sign In" : "Sign Up"}
+            {type === "sign-in" ? t.auth.signIn : t.auth.signUp}
           </CardTitle>
 
           <CardDescription>
             {type === "sign-in"
-              ? "Sign in to access your account."
-              : "Create your account to get started."}
+              ? t.auth.signInDescription
+              : t.auth.signUpDescription}
           </CardDescription>
         </CardHeader>
 
@@ -120,7 +129,6 @@ const AuthForm = ({ type }: { type: FormType }) => {
             className="auth-form"
           >
             <FieldGroup className="mb-3">
-              {/* Full Name */}
               {type === "sign-up" && (
                 <Controller
                   name="fullName"
@@ -135,13 +143,13 @@ const AuthForm = ({ type }: { type: FormType }) => {
                             className="shad-form-label"
                             htmlFor={field.name}
                         >
-                          Full Name
+                          {t.auth.fullName}
                         </FieldLabel>
 
                         <Input
                           {...field}
                           id={field.name}
-                          placeholder="Enter your full name"
+                          placeholder={t.auth.enterFullName}
                           autoComplete="name"
                           className="shad-input"
                           aria-invalid={fieldState.invalid}
@@ -159,7 +167,6 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 />
               )}
 
-              {/* Email */}
               <Controller
                 name="email"
                 control={form.control}
@@ -173,14 +180,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
                           className="shad-form-label"
                           htmlFor={field.name}
                       >
-                        Email
+                        {t.auth.email}
                       </FieldLabel>
 
                       <Input
                         {...field}
                         id={field.name}
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder={t.auth.enterEmail}
                         className="shad-input"
                         autoComplete="email"
                         aria-invalid={fieldState.invalid}
@@ -197,14 +204,13 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 )}
               />
 
-              {/* Submit */}
               <Button
                 type="submit"
                 form="auth-form"
                 className="w-full form-submit-button"
                 disabled={isLoading}
               >
-                {type === "sign-in" ? "Sign In" : "Sign Up"}
+                {type === "sign-in" ? t.auth.signIn : t.auth.signUp}
 
                 {isLoading && (
                   <Image
@@ -217,32 +223,30 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 )}
               </Button>
 
-              {/* Server Error */}
               {errorMessage && (
                 <p className="error-message">
                   *{errorMessage}
                 </p>
               )}
 
-              {/* Switch Auth */}
               <div className="text-center text-sm">
                 <span className="text-muted-foreground">
                   {type === "sign-in"
-                    ? "Don't have an account?"
-                    : "Already have an account?"}
+                    ? t.auth.noAccount
+                    : t.auth.hasAccount}
                 </span>
 
                 <Link
                   href={
                     type === "sign-in"
-                      ? "/sign-up"
-                      : "/sign-in"
+                      ? `/${lang}/sign-up`
+                      : `/${lang}/sign-in`
                   }
                   className="ml-1 font-bold text-brand hover:underline"
                 >
                   {type === "sign-in"
-                    ? "Sign Up"
-                    : "Sign In"}
+                    ? t.auth.signUp
+                    : t.auth.signIn}
                 </Link>
               </div>
             </FieldGroup>

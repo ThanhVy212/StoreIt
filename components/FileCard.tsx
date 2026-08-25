@@ -8,9 +8,11 @@ import { cn, convertFileSize } from "@/lib/utils";
 import FormattedDateTime from "@/components/FormattedDateTime";
 import ActionDropdown from "@/components/ActionDropdown";
 import { Checkbox } from "@/components/ui/checkbox";
+import {useLocale} from "@/lib/locale-context";
 
 
 const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelect, currentUserId, currentUserEmail}: FileCardProps) => {
+    const { lang, dictionary: t } = useLocale();
     const fileUrl = file.url?.includes("project=undefined")
         ? file.url.replace("project=undefined", `project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`)
         : file.url;
@@ -57,7 +59,7 @@ const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelec
                 <p className="subtitle-2 line-clamp-1">{file.name}</p>
                 <FormattedDateTime date={file.$createdAt} className="body-2 text-light-100"/>
                 <p className="caption line-clamp-1 text-light-200">
-                    By: {file.owner?.fullName}
+                    {t.files.by} {file.owner?.fullName}
                 </p>
             </Link>
         </div>

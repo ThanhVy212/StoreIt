@@ -166,6 +166,7 @@
   @apply !w-full !pt-2 !text-light-100 text-sm leading-5 font-normal;
 }
 
+
 .shad-form-message {
   @apply mb-[5px] !text-red text-sm leading-5;
 }
@@ -173,6 +174,7 @@
 .shad-alert-dialog {
   @apply !w-[95%] !max-w-[480px] !rounded-xl !bg-white !px-4 !py-10 !outline-none;
 }
+
 
 .shad-submit-btn {
   @apply !rounded-full !bg-brand text-sm leading-5 font-medium transition-all hover:!bg-brand-100;
@@ -185,6 +187,7 @@
 .shad-otp-slot {
   @apply !flex !size-12 !items-center !justify-center !gap-5 !rounded-xl !border-2 !border-light-300 !font-medium !shadow-drop-1;
 }
+
 
 .shad-sheet {
   @apply !pt-0;
@@ -201,7 +204,12 @@
 
 .shad-dialog {
   @apply !w-[90%] !max-w-[400px] !rounded-[26px] !px-6 !py-8;
+
+  @media (min-width: 1024px) {
+    @apply !max-w-[600px];
+  }
 }
+
 
 .shad-chart-title {
   @apply !text-white;
@@ -243,6 +251,7 @@
   }
 }
 
+
 /*DASHBOARD*/
 
 .dashboard-container {
@@ -256,6 +265,7 @@
 .dashboard-summary-card {
   @apply relative mt-6 rounded-[20px] bg-white p-5 transition-all hover:scale-105;
 }
+
 
 .summary-type-icon {
   @apply absolute -top-[25px] -left-3 z-10 w-[190px] object-contain;
@@ -272,6 +282,7 @@
 .dashboard-recent-files {
   @apply h-full overflow-auto rounded-[20px] bg-white p-5 xl:h-[654px] xl:p-7;
 }
+
 
 .recent-file-details {
   @apply flex w-full items-center justify-between;
@@ -328,6 +339,7 @@
   @apply min-h-0 w-full flex-1 overflow-auto rounded-xl bg-white;
 }
 
+
 .file-table-header,
 .file-table-row {
   display: grid;
@@ -340,16 +352,18 @@
   @apply sticky top-0 z-10 h-11 bg-white text-xs font-medium text-light-200;
 }
 
+
 .file-table-row {
   @apply min-h-12 text-sm text-light-100 transition-colors hover:bg-light-400;
 }
+
 
 .file-table-row:last-child {
   @apply border-b-0;
 }
 
 .file-table-row-selected {
-  @apply bg-brand/5;
+  background-color: color-mix(in srgb, var(--color-brand) 5%, transparent);
 }
 
 .file-table-cell {
@@ -441,6 +455,7 @@
   @apply flex size-11 items-center justify-center rounded-xl bg-white shadow-sm transition-all hover:shadow-drop-2;
 }
 
+
 .view-toggle-btn-active {
   @apply bg-brand shadow-drop-2;
 }
@@ -507,6 +522,7 @@
   @apply h-9 rounded-full border border-brand bg-white text-light-100 transition-all duration-200 hover:scale-[1.02] hover:bg-transparent md:h-[42px] md:flex-1;
 }
 
+
 .modal-submit-button {
   @apply !mx-0 h-9 w-full rounded-full bg-brand text-sm leading-5 font-medium transition-all duration-200 hover:scale-[1.02] hover:bg-brand-100 md:h-[42px] md:flex-1;
 }
@@ -521,7 +537,7 @@
 }
 
 .file-details-label {
-  @apply w-[20%] text-light-100 text-sm leading-5;
+  @apply w-[25%] text-light-100 text-sm leading-5;
 }
 
 .file-details-value {
@@ -569,8 +585,9 @@
   @apply flex cursor-pointer flex-col gap-6 rounded-[18px] bg-white p-5 shadow-sm transition-all hover:shadow-drop-3;
 }
 
+
 .file-card-selected {
-  @apply bg-brand/5;
+  background-color: color-mix(in srgb, var(--color-brand) 5%, transparent);
 }
 
 .file-card-details {
@@ -580,6 +597,7 @@
 .profile-card {
   @apply flex flex-col gap-6 rounded-[18px] bg-white p-5 shadow-sm transition-all;
 }
+
 
 /*CHART*/
 
@@ -626,6 +644,7 @@
 .uploader-preview-list {
   @apply fixed right-10 bottom-10 z-50 flex h-fit w-full max-w-[480px] flex-col gap-3 rounded-[20px] bg-white p-7 shadow-drop-3;
 }
+
 
 .uploader-preview-item {
   @apply flex items-center justify-between gap-3 rounded-xl p-3 shadow-drop-3;
@@ -734,6 +753,7 @@
   @apply absolute top-16 left-0 z-50 flex w-full flex-col gap-3 rounded-[20px] bg-white p-4;
 }
 
+
 .empty-result {
   @apply text-center text-light-100 text-sm leading-5;
 }
@@ -743,6 +763,7 @@
 .sidebar {
   @apply hidden h-screen w-[90px] flex-col overflow-auto px-5 py-7 sm:flex lg:w-[280px] xl:w-[325px];
 }
+
 
 .sidebar-nav {
   @apply mt-9 flex flex-1 flex-col gap-1 text-base leading-6 font-semibold text-brand;
@@ -771,6 +792,7 @@
   @apply rounded-full border border-light-300 px-6 text-sm font-medium text-light-100 transition-colors hover:border-brand hover:text-brand;
 }
 
+
 .btn-save-change {
   @apply rounded-full bg-brand px-6 text-sm font-medium text-white transition-all hover:bg-brand-100;
 }
@@ -784,6 +806,7 @@
 .sort-select {
   @apply h-11 w-full rounded-lg border-transparent bg-white shadow-sm sm:w-[210px];
 }
+
 
 .sort-select-content {
   @apply !shadow-drop-3;

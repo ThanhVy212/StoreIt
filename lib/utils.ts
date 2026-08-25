@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { appwriteConfig } from '@/lib/appwrite/config';
+import type { Dictionary } from '@/lib/get-dictionary';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -124,39 +125,36 @@ export const formatFileName = (name: string, extension?: string | null): string 
   return cleanExtension ? `${cleanName}.${cleanExtension}` : cleanName;
 };
 
-export const formatDateTime = (isoString: string | null | undefined) => {
+export const formatDateTime = (isoString: string | null | undefined, locale?: string) => {
   if (!isoString) return '—';
 
   const date = new Date(isoString);
+  const localeCode = locale === 'vi' ? 'vi-VN' : 'en-US';
 
-  // Get hours and adjust for 12-hour format
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
-  const period = hours >= 12 ? 'pm' : 'am';
+  try {
+    const timePart = new Intl.DateTimeFormat(localeCode, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: locale !== 'vi',
+    }).format(date);
 
-  // Convert hours to 12-hour format
-  hours = hours % 12 || 12;
+    const datePart = new Intl.DateTimeFormat(localeCode, {
+      day: 'numeric',
+      month: 'short',
+    }).format(date);
 
-  // Format the time and date parts
-  const time = `${hours}:${minutes.toString().padStart(2, '0')}${period}`;
-  const day = date.getDate();
-  const monthNames = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  const month = monthNames[date.getMonth()];
-
-  return `${time}, ${day} ${month}`;
+    return `${timePart}, ${datePart}`;
+  } catch {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12 || 12;
+    const time = `${hours}:${minutes.toString().padStart(2, '0')}${period}`;
+    const day = date.getDate();
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const month = monthNames[date.getMonth()];
+    return `${time}, ${day} ${month}`;
+  }
 };
 
 export const getFileIcon = (
@@ -262,31 +260,31 @@ export const downloadFile = async (url: string, fileName: string) => {
 };
 
 // DASHBOARD UTILS
-export const getUsageSummary = (totalSpace: any) => {
+export const getUsageSummary = (totalSpace: any, dictionary?: Dictionary) => {
   return [
     {
-      title: 'Documents',
+      title: dictionary?.nav?.documents || 'Documents',
       size: totalSpace.document?.size || 0,
       latestDate: totalSpace.document?.latestDate || '',
       icon: '/assets/icons/file-document-light.svg',
       url: '/documents',
     },
     {
-      title: 'Images',
+      title: dictionary?.nav?.images || 'Images',
       size: totalSpace.image?.size || 0,
       latestDate: totalSpace.image?.latestDate || '',
       icon: '/assets/icons/file-image-light.svg',
       url: '/images',
     },
     {
-      title: 'Video',
+      title: dictionary?.nav?.video || 'Video',
       size: totalSpace.video?.size || 0,
       latestDate: totalSpace.video?.latestDate || '',
       icon: '/assets/icons/file-video-light.svg',
       url: '/video',
     },
     {
-      title: 'Others',
+      title: dictionary?.nav?.others || 'Others',
       size: totalSpace.other?.size || 0,
       latestDate: totalSpace.other?.latestDate || '',
       icon: '/assets/icons/file-other-light.svg',

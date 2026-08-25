@@ -4,10 +4,11 @@ import Header from "@/components/Header";
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import {redirect} from "next/navigation";
 
-const Layout = async ({children}: {children: React.ReactNode}) => {
+const Layout = async ({children, params}: {children: React.ReactNode; params: Promise<{ lang: string }>}) => {
+    const { lang } = await params;
     const currentUser = await getCurrentUser();
 
-    if(!currentUser) return redirect("/sign-in");
+    if(!currentUser) return redirect(`/${lang}/sign-in`);
 
     return (
         <main className="flex h-screen">

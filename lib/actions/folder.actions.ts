@@ -80,6 +80,10 @@ export const createFolder = async ({
     const { tablesDB } = await createAdminClient();
 
     try {
+        if (parentFolderId) {
+            await assertFolderAuthorized(tablesDB, parentFolderId);
+        }
+
         const uniqueName = await getUniqueFolderName(
             tablesDB,
             name,
@@ -294,6 +298,32 @@ export const getFolderById = async (folderId: string) => {
     } catch (err) {
         console.log("Failed to get folder", err);
         throw err;
+    }
+};
+
+export const getFolderAncestors = async (folderId: string): Promise<{ id: string; name: string }[]> => {
+    const { tablesDB } = await createAdminClient();
+    const ancestors: { id: string; name: string }[] = [];
+    let currentId: string | null = folderId;
+
+    try {
+        while (currentId) {
+            const folder: FolderRow = await tablesDB.getRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.foldersTableId,
+                rowId: currentId,
+            });
+
+            await assertFolderAuthorized(tablesDB, currentId);
+
+            ancestors.unshift({ id: folder.$id, name: folder.name });
+            currentId = folder.parentFolderId ?? null;
+        }
+
+        return ancestors;
+    } catch (err) {
+        console.log("Failed to get folder ancestors", err);
+        return ancestors;
     }
 };
 

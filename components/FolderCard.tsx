@@ -8,6 +8,7 @@ import { cn, convertFileSize } from '@/lib/utils';
 import FormattedDateTime from '@/components/FormattedDateTime';
 import FolderActionDropdown from '@/components/FolderActionDropdown';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLocale } from '@/lib/locale-context';
 
 const FolderCard = ({
     folder,
@@ -22,6 +23,7 @@ const FolderCard = ({
     isSelected?: boolean;
     onToggleSelect?: (folder: any) => void;
 }) => {
+    const { lang } = useLocale();
     const folderIcon = fileCount > 0
         ? '/assets/icons/file-items-folder.svg'
         : '/assets/icons/file-empty-folder.svg';
@@ -64,7 +66,7 @@ const FolderCard = ({
                         </div>
                     )}
 
-                    {isTrashed ? folderIconElement : <Link href={`/folders/${folder.$id}`}>{folderIconElement}</Link>}
+                    {isTrashed ? folderIconElement : <Link href={`/${lang}/folders/${folder.$id}`}>{folderIconElement}</Link>}
                 </div>
 
                 <div className="flex flex-col items-end justify-between self-stretch">
@@ -72,7 +74,7 @@ const FolderCard = ({
                 </div>
             </div>
 
-            {isTrashed ? detailsContent : <Link href={`/folders/${folder.$id}`}>{detailsContent}</Link>}
+            {isTrashed ? detailsContent : <Link href={`/${lang}/folders/${folder.$id}`}>{detailsContent}</Link>}
         </div>
     );
 };

@@ -28,15 +28,13 @@ import { deleteFolder, getFolderFilesForDownload, moveFolderToTrash, renameFolde
 import { constructDownloadUrl, convertFileSize, downloadFile, formatDateTime } from '@/lib/utils';
 import JSZip from 'jszip';
 import { getFolderSize } from '@/lib/actions/folder.actions';
+import { useLocale } from '@/lib/locale-context';
+import type { Dictionary } from '@/lib/get-dictionary';
+import {DetailRow} from "@/components/ActionsModalContent";
 
-const FolderDetails = ({
-    folder,
-    fileCount,
-}: {
-    folder: FolderRow;
-    fileCount: number;
-}) => {
+const FolderDetails = ({folder, fileCount}: { folder: FolderRow; fileCount: number }) => {
     const [totalSize, setTotalSize] = useState<number | null>(null);
+    const { lang, dictionary: t } = useLocale();
 
     useEffect(() => {
         let cancelled = false;
@@ -48,44 +46,24 @@ const FolderDetails = ({
 
     return (
         <div className="space-y-4 px-2 pt-2">
-            <div className="flex gap-2">
-                <p className="file-details-label text-left shrink-0">Name:</p>
-                <p className="file-details-value text-left">{folder.name}</p>
-            </div>
-            <div className="flex gap-2">
-                <p className="file-details-label text-left shrink-0">Size:</p>
-                <p className="file-details-value text-left">
-                    {totalSize !== null ? convertFileSize(totalSize) : 'Loading...'}
-                </p>
-            </div>
-            <div className="flex gap-2">
-                <p className="file-details-label text-left shrink-0">Files:</p>
-                <p className="file-details-value text-left">{fileCount}</p>
-            </div>
-            <div className="flex gap-2">
-                <p className="file-details-label text-left shrink-0">Created:</p>
-                <p className="file-details-value text-left">{formatDateTime(folder.$createdAt)}</p>
-            </div>
-            <div className="flex gap-2">
-                <p className="file-details-label text-left shrink-0">Modified:</p>
-                <p className="file-details-value text-left">{formatDateTime(folder.$updatedAt)}</p>
-            </div>
+            <DetailRow label={t.actions.name} value={folder.name} />
+            <DetailRow label={t.actions.size} value={totalSize !== null ? convertFileSize(totalSize) : t.actions.loading} />
+            <DetailRow label={t.actions.files} value={fileCount.toString()} />
+            <DetailRow label={t.actions.created} value={formatDateTime(folder.$createdAt, lang)} />
+            <DetailRow label={t.actions.modified} value={formatDateTime(folder.$updatedAt, lang)} />
             {folder.owner && (
-                <div className="flex gap-2">
-                    <p className="file-details-label text-left shrink-0">Owner:</p>
-                    <p className="file-details-value text-left">{folder.owner.email}</p>
-                </div>
+                <DetailRow label={t.actions.owner} value={folder.owner.email} avatar={folder.owner?.avatar} />
             )}
         </div>
     );
 };
 
-const downloadFolderAsZip = async (folderId: string, folderName: string) => {
+const downloadFolderAsZip = async (folderId: string, folderName: string, t: Dictionary) => {
     try {
         const files = await getFolderFilesForDownload(folderId);
 
         if (!files || files.length === 0) {
-            toast.add({ type: 'info', description: 'Folder is empty. Nothing to download.' });
+            toast.add({ type: 'info', description: t.actions.folderEmpty });
             return;
         }
 
@@ -93,11 +71,11 @@ const downloadFolderAsZip = async (folderId: string, folderName: string) => {
         const folder = zip.folder(folderName);
 
         if (!folder) {
-            toast.add({ type: 'error', description: 'Failed to create zip file.' });
+            toast.add({ type: 'error', description: t.actions.failedCreateZip });
             return;
         }
 
-        toast.add({ type: 'info', description: 'Preparing download...' });
+        toast.add({ type: 'info', description: t.actions.preparingDownload });
 
         await Promise.all(
             files.map(async (file: { name: string; url: string }) => {
@@ -123,10 +101,10 @@ const downloadFolderAsZip = async (folderId: string, folderName: string) => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
 
-        toast.add({ type: 'success', description: 'Folder downloaded successfully.' });
+        toast.add({ type: 'success', description: t.actions.folderDownloaded });
     } catch (err) {
         console.error('Download failed:', err);
-        toast.add({ type: 'error', description: 'Failed to download folder.' });
+        toast.add({ type: 'error', description: t.actions.failedDownloadFolder });
     }
 };
 
@@ -147,6 +125,7 @@ const FolderActionDropdown = ({
     const [name, setName] = useState(folder.name ?? '');
     const [isLoading, setIsLoading] = useState(false);
     const [emails, setEmails] = useState<string[]>([]);
+    const { dictionary: t } = useLocale();
 
     const path = usePathname();
     const isTrashed = Boolean(folder.trashed);
@@ -154,16 +133,16 @@ const FolderActionDropdown = ({
 
     const menuItems = isTrashed
         ? [
-            { label: 'Restore', icon: '/assets/icons/restore.svg', value: 'restore' },
-            { label: 'Details', icon: '/assets/icons/info.svg', value: 'details' },
-            { label: 'Delete', icon: '/assets/icons/delete.svg', value: 'delete' },
+            { label: 'Restore', key: 'restore', icon: '/assets/icons/restore.svg', value: 'restore' },
+            { label: 'Details', key: 'details', icon: '/assets/icons/info.svg', value: 'details' },
+            { label: 'Delete', key: 'delete', icon: '/assets/icons/delete.svg', value: 'delete' },
           ]
         : [
-            { label: 'Rename', icon: '/assets/icons/edit.svg', value: 'rename' },
-            { label: 'Details', icon: '/assets/icons/info.svg', value: 'details' },
-            { label: 'Share', icon: '/assets/icons/share.svg', value: 'share' },
-            { label: 'Download', icon: '/assets/icons/download.svg', value: 'download' },
-            { label: 'Move to trash', icon: '/assets/icons/delete.svg', value: 'trash' },
+            { label: 'Rename', key: 'rename', icon: '/assets/icons/edit.svg', value: 'rename' },
+            { label: 'Details', key: 'details', icon: '/assets/icons/info.svg', value: 'details' },
+            { label: 'Share', key: 'share', icon: '/assets/icons/share.svg', value: 'share' },
+            { label: 'Download', key: 'download', icon: '/assets/icons/download.svg', value: 'download' },
+            { label: 'Move to trash', key: 'moveToTrash', icon: '/assets/icons/delete.svg', value: 'trash' },
           ];
 
     useEffect(() => {
@@ -198,13 +177,13 @@ const FolderActionDropdown = ({
                     setName(success.name);
                 }
                 if (currentAction === 'trash') {
-                    toast.add({ type: 'success', description: 'Folder moved to trash.' });
+                    toast.add({ type: 'success', description: t.toast.folderMovedToTrash });
                 }
                 if (currentAction === 'restore') {
-                    toast.add({ type: 'success', description: 'Folder restored.' });
+                    toast.add({ type: 'success', description: t.toast.folderRestored });
                 }
                 if (currentAction === 'delete') {
-                    toast.add({ type: 'success', description: 'Folder deleted permanently.' });
+                    toast.add({ type: 'success', description: t.toast.folderDeletedPermanently });
                 }
                 if (currentAction !== 'share') {
                     closeAllModals();
@@ -213,7 +192,7 @@ const FolderActionDropdown = ({
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Something went wrong. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsLoading(false);
@@ -227,10 +206,7 @@ const FolderActionDropdown = ({
             <DialogContent className="shad-dialog button">
                 <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                     <DialogTitle className="text-center text-light-100">
-                        {action === 'rename' && 'Rename'}
-                        {action === 'details' && 'Details'}
-                        {action === 'share' && 'Share'}
-                        {action === 'delete' && 'Delete'}
+                        {t.actions[action as keyof typeof t.actions] || action}
                     </DialogTitle>
                     {action === 'rename' && (
                         <Input
@@ -244,16 +220,17 @@ const FolderActionDropdown = ({
                     )}
                     {action === 'delete' && (
                         <p className="delete-confirmation">
-                            Permanently delete folder{' '}
-                            <span className="delete-file-name">{folder.name}</span>?
-                            This cannot be undone.
+                            <span className="delete-file-name">
+                                {t.actions.permanentlyDeleteFolder.replace('{name}', folder.name)}
+                            </span>
+                            {t.actions.thisCannotBeUndone}
                         </p>
                     )}
                 </DialogHeader>
                 {['rename', 'delete'].includes(action) && (
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
                         <Button onClick={closeAllModals} className="modal-cancel-button">
-                            Cancel
+                            {t.actions.cancel}
                         </Button>
                         <Button
                             onClick={() => void handleAction()}
@@ -261,7 +238,7 @@ const FolderActionDropdown = ({
                             disabled={isLoading}
                         >
                             <p className="capitalize">
-                                {action === 'delete' ? 'Delete forever' : action}
+                                {action === 'delete' ? t.actions.deleteForever : t.actions[action as keyof typeof t.actions] || action}
                             </p>
                             {isLoading && (
                                 <Image
@@ -310,7 +287,7 @@ const FolderActionDropdown = ({
 
                                     if (item.value === 'download') {
                                         setIsDropdownOpen(false);
-                                        void downloadFolderAsZip(folder.$id, folder.name);
+                                        void downloadFolderAsZip(folder.$id, folder.name, t);
                                         return;
                                     }
 
@@ -334,7 +311,7 @@ const FolderActionDropdown = ({
                                         width={30}
                                         height={30}
                                     />
-                                    {item.label}
+                                    {t.actions[item.key as keyof typeof t.actions] || item.label}
                                 </div>
                             </DropdownMenuItem>
                         ))}

@@ -5,10 +5,13 @@ import { FileViewProvider } from "@/components/FileViewProvider";
 import FileViewToggle from "@/components/FileViewToggle";
 import { getCurrentUser } from "@/lib/actions/user.actions";
 import CreateFolderButton from "@/components/CreateFolderButton";
+import { getDictionary, type Locale } from "@/lib/get-dictionary";
 
 export const dynamic = "force-dynamic";
 
-const FoldersPage = async ({ searchParams }: SearchParamProps) => {
+const FoldersPage = async ({ searchParams, params }: SearchParamProps) => {
+    const { lang } = (await params) as { lang: string };
+    const dictionary = await getDictionary(lang as Locale);
     const searchText = ((await searchParams)?.query as string) || "";
     const sort = ((await searchParams)?.sort as string) || "$createdAt-desc";
     const currentUser = await getCurrentUser();
@@ -34,7 +37,7 @@ const FoldersPage = async ({ searchParams }: SearchParamProps) => {
             <div className="page-container">
                 <section className="w-full shrink-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <h1 className="h1">Folders</h1>
+                        <h1 className="h1">{dictionary.folders.folders}</h1>
                         {currentUser && (
                             <CreateFolderButton
                                 ownerId={currentUser.$id}
@@ -46,12 +49,12 @@ const FoldersPage = async ({ searchParams }: SearchParamProps) => {
                     <div className="total-size-section">
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                             <p className="body-1">
-                                Total: <span className="h5">{totalFolders}</span>
+                                {dictionary.folders.total} <span className="h5">{totalFolders}</span>
                             </p>
                         </div>
 
                         <div className="sort-container">
-                            <p className="body-1 hidden text-light-200 sm:block">Sort by:</p>
+                            <p className="body-1 hidden text-light-200 sm:block">{dictionary.folders.sortBy}</p>
                             <Sort />
                             <FileViewToggle />
                         </div>

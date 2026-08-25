@@ -8,6 +8,8 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { updateUser, uploadAvatar } from "@/lib/actions/user.actions";
 import { toast } from "@/components/ui/toast";
+import { useLocale } from "@/lib/locale-context";
+import { useRouter, usePathname } from "next/navigation";
 
 const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -15,6 +17,9 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
     const [avatarUrl, setAvatarUrl] = useState(avatar);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const { lang, dictionary: t } = useLocale();
+    const router = useRouter();
+    const pathname = usePathname();
 
     const handlePhotoClick = () => {
         fileInputRef.current?.click();
@@ -27,7 +32,7 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
         if (file.size > 2 * 1024 * 1024) {
             toast.add({
                 type: "error",
-                description: "File is too large. Max size is 2MB.",
+                description: t.toast.fileTooLarge,
             });
             return;
         }
@@ -36,7 +41,7 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
         if (!allowedTypes.includes(file.type)) {
             toast.add({
                 type: "error",
-                description: "Only JPG, PNG or GIF files are allowed.",
+                description: t.toast.invalidFileType,
             });
             return;
         }
@@ -47,19 +52,19 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
             if (!result.url) {
                 toast.add({
                     type: "error",
-                    description: result.error || "Failed to upload avatar.",
+                    description: result.error || t.toast.failedUploadAvatar,
                 });
                 return;
             }
             setAvatarUrl(result.url);
             toast.add({
                 type: "success",
-                description: "Avatar updated successfully.",
+                description: t.toast.avatarUpdated,
             });
         } catch {
             toast.add({
                 type: "error",
-                description: "Failed to upload avatar. Please try again.",
+                description: t.toast.failedUploadAvatar,
             });
         } finally {
             setIsLoading(false);
@@ -74,7 +79,7 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
         if (!name.trim()) {
             toast.add({
                 type: "error",
-                description: "Full name cannot be empty.",
+                description: t.toast.nameEmpty,
             });
             return;
         }
@@ -85,28 +90,34 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
             if (!result.success) {
                 toast.add({
                     type: "error",
-                    description: result.error || "Failed to update profile.",
+                    description: result.error || t.toast.failedUpdateProfile,
                 });
                 return;
             }
             toast.add({
                 type: "success",
-                description: "Profile updated successfully.",
+                description: t.toast.profileUpdated,
             });
         } catch {
             toast.add({
                 type: "error",
-                description: "Failed to update profile. Please try again.",
+                description: t.toast.failedUpdateProfile,
             });
         } finally {
             setIsSaving(false);
         }
     };
 
+    const handleLanguageChange = (newLang: string) => {
+        const segments = pathname.split("/");
+        segments[1] = newLang;
+        router.push(segments.join("/"));
+    };
+
     return (
         <div className="space-y-6 animate-fade-in max-w-4xl">
             <Card className="p-6 profile-card">
-                <h3 className="h3 capitalize">Profile Information</h3>
+                <h3 className="h3 capitalize">{t.settings.profileInformation}</h3>
                 <div className="space-y-6">
                     <div className="flex items-center gap-4">
                         <Image
@@ -132,16 +143,16 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
                                 onClick={handlePhotoClick}
                                 disabled={isLoading}
                             >
-                                {isLoading ? "Uploading..." : "Change Photo"}
+                                {isLoading ? t.settings.uploading : t.settings.changePhoto}
                             </Button>
 
-                            <p className="caption mt-2 text-light-200">JPG, PNG or GIF. Max size 2MB</p>
+                            <p className="caption mt-2 text-light-200">{t.settings.photoHint}</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name" className="subtitle-2 text-light-100">Full Name</Label>
+                            <Label htmlFor="name" className="subtitle-2 text-light-100">{t.settings.fullName}</Label>
                             <Input
                                 id="name"
                                 value={name}
@@ -150,7 +161,7 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="subtitle-2 text-light-100">Email</Label>
+                            <Label htmlFor="email" className="subtitle-2 text-light-100">{t.settings.email}</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -166,8 +177,46 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
                         onClick={handleSaveChanges}
                         disabled={isSaving}
                     >
-                        {isSaving ? "Saving..." : "Save Changes"}
+                        {isSaving ? t.settings.saving : t.settings.saveChanges}
                     </Button>
+                </div>
+            </Card>
+
+            {/* Language */}
+            <Card className="p-6 profile-card">
+                <h3 className="h3 capitalize">{t.settings.language}</h3>
+                <div className="space-y-4 mt-4">
+                    <div className="flex items-center justify-between">
+                        <Label className="subtitle-2 text-light-100">{t.settings.language}</Label>
+                        <div className="flex items-center gap-2 rounded-full border border-light-300 p-1" role="radiogroup" aria-label={t.settings.language}>
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={lang === "en"}
+                                onClick={() => handleLanguageChange("en")}
+                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                    lang === "en"
+                                        ? "bg-brand text-white shadow-sm"
+                                        : "text-light-200 hover:text-light-100"
+                                }`}
+                            >
+                                {t.settings.english}
+                            </button>
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={lang === "vi"}
+                                onClick={() => handleLanguageChange("vi")}
+                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                    lang === "vi"
+                                        ? "bg-brand text-white shadow-sm"
+                                        : "text-light-200 hover:text-light-100"
+                                }`}
+                            >
+                                {t.settings.vietnamese}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </Card>
         </div>

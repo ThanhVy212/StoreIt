@@ -17,6 +17,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { FolderRow } from '@/types/db.types';
+import { useLocale } from '@/lib/locale-context';
 
 interface TypeFolderListProps {
     folders: FolderRow[];
@@ -39,6 +40,7 @@ const TypeFolderList = ({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const path = usePathname();
+    const { dictionary: t } = useLocale();
 
     const isAllSelected = folders.length > 0 && selectedIds.length === folders.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < folders.length;
@@ -68,13 +70,13 @@ const TypeFolderList = ({
             await moveFoldersToTrash({ folderIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Moved ${selectedIds.length} folder${selectedIds.length > 1 ? 's' : ''} to trash.`,
+                description: t.toast.folderMovedToTrash,
             });
             setSelectedIds([]);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to move folders to trash. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsUpdating(false);
@@ -88,13 +90,13 @@ const TypeFolderList = ({
             await restoreFolders({ folderIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Restored ${selectedIds.length} folder${selectedIds.length > 1 ? 's' : ''}.`,
+                description: t.toast.folderRestored,
             });
             setSelectedIds([]);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to restore folders. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsUpdating(false);
@@ -108,14 +110,14 @@ const TypeFolderList = ({
             await deleteFolders({ folderIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Permanently deleted ${selectedIds.length} folder${selectedIds.length > 1 ? 's' : ''}.`,
+                description: t.toast.folderDeletedPermanently,
             });
             setSelectedIds([]);
             setIsDeleteDialogOpen(false);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to delete selected folders. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsDeleting(false);
@@ -130,9 +132,11 @@ const TypeFolderList = ({
         );
     }
 
+    const selectedCount = selectedIds.length;
+    const foldersText = selectedCount === 1 ? t.deleteConfirm.selectedFolder : t.deleteConfirm.selectedFolders;
+
     return (
         <div className="file-type-list">
-            {/* Selection Toolbar */}
             <div className="selection-toolbar">
                 <div className="selection-toolbar-left">
                     <Checkbox
@@ -145,10 +149,10 @@ const TypeFolderList = ({
                         htmlFor="select-all-folders"
                         className="body-2 selection-toolbar-label"
                     >
-                        Select All{' '}
+                        {t.common.selectAll}{' '}
                         {selectedIds.length > 0 && (
                             <span className="selection-toolbar-count">
-                                ({selectedIds.length} / {folders.length} selected)
+                                ({selectedIds.length} / {folders.length} {t.selection.selected})
                             </span>
                         )}
                     </label>
@@ -172,7 +176,7 @@ const TypeFolderList = ({
                                         width={16}
                                         height={16}
                                     />
-                                    <span>Restore ({selectedIds.length})</span>
+                                    <span>{t.selection.restore} ({selectedIds.length})</span>
                                 </Button>
                                 <Button
                                     type="button"
@@ -187,7 +191,7 @@ const TypeFolderList = ({
                                         width={16}
                                         height={16}
                                     />
-                                    <span>Delete forever ({selectedIds.length})</span>
+                                    <span>{t.selection.deleteForever} ({selectedIds.length})</span>
                                 </Button>
                             </>
                         ) : (
@@ -205,7 +209,7 @@ const TypeFolderList = ({
                                     width={16}
                                     height={16}
                                 />
-                                <span>Move to trash ({selectedIds.length})</span>
+                                <span>{t.selection.moveToTrash} ({selectedIds.length})</span>
                             </Button>
                         )}
 
@@ -216,7 +220,7 @@ const TypeFolderList = ({
                             className="selection-toolbar-clear"
                             onClick={handleClearSelection}
                         >
-                            Clear
+                            {t.common.clear}
                         </Button>
                     </div>
                 )}
@@ -252,14 +256,14 @@ const TypeFolderList = ({
                 <DialogContent className="shad-dialog button">
                     <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                         <DialogTitle className="text-center text-light-100">
-                            Delete {selectedIds.length} folder{selectedIds.length > 1 ? 's' : ''} forever
+                            {t.deleteConfirm.deleteFoldersForever.replace("{count}", String(selectedIds.length))}
                         </DialogTitle>
                         <p className="delete-confirmation text-center">
-                            Are you sure you want to permanently delete{' '}
+                            {t.deleteConfirm.confirmDeleteFolders}{' '}
                             <span className="font-semibold text-dark-200">
-                                {selectedIds.length} selected folder{selectedIds.length > 1 ? 's' : ''}
+                                {selectedIds.length} {foldersText}
                             </span>
-                            ? All contents will also be deleted. This action cannot be undone.
+                            ? {t.deleteConfirm.allContentsDeleted}
                         </p>
                     </DialogHeader>
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
@@ -268,14 +272,14 @@ const TypeFolderList = ({
                             className="modal-cancel-button"
                             disabled={isDeleting}
                         >
-                            Cancel
+                            {t.actions.cancel}
                         </Button>
                         <Button
                             onClick={handleDeleteSelected}
                             className="modal-submit-button"
                             disabled={isDeleting}
                         >
-                            <p>Delete forever</p>
+                            <p>{t.actions.deleteForever}</p>
                             {isDeleting && (
                                 <Image
                                     src="/assets/icons/loader.svg"

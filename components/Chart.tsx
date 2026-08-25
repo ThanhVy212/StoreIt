@@ -3,8 +3,10 @@
 import React from "react";
 import { calculatePercentage, convertFileSize } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocale } from "@/lib/locale-context";
 
 export const Chart = ({ used = 0 }: { used: number }) => {
+    const { dictionary: t } = useLocale();
     const percentage = calculatePercentage(used);
     const radius = 64;
     const strokeWidth = 14;
@@ -21,7 +23,6 @@ export const Chart = ({ used = 0 }: { used: number }) => {
                         width={radius * 2 + strokeWidth}
                         className="-rotate-90"
                     >
-                        {/* Background track circle */}
                         <circle
                             stroke="rgba(255, 255, 255, 0.2)"
                             fill="transparent"
@@ -30,7 +31,6 @@ export const Chart = ({ used = 0 }: { used: number }) => {
                             cx={radius + strokeWidth / 2}
                             cy={radius + strokeWidth / 2}
                         />
-                        {/* Active progress arc */}
                         <circle
                             stroke="white"
                             fill="transparent"
@@ -47,13 +47,13 @@ export const Chart = ({ used = 0 }: { used: number }) => {
 
                     <div className="absolute flex flex-col items-center justify-center text-center">
                         <span className="chart-total-percentage">{percentage}%</span>
-                        <span className="text-xs font-normal text-white/70">Space used</span>
+                        <span className="text-xs font-normal text-white/70">{t.dashboard.spaceUsed}</span>
                     </div>
                 </div>
             </CardContent>
 
             <CardHeader className="chart-details">
-                <CardTitle className="chart-title">Available Storage</CardTitle>
+                <CardTitle className="chart-title">{t.dashboard.availableStorage}</CardTitle>
                 <CardDescription className="chart-description">
                     {used ? convertFileSize(used) : "0 GB"} / 2 GB
                 </CardDescription>

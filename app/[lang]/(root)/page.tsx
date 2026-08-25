@@ -10,10 +10,14 @@ import FormattedDateTime from "@/components/FormattedDateTime";
 import Thumbnail from "@/components/Thumbnail";
 import ActionDropdown from "@/components/ActionDropdown";
 import { FileRow } from "@/types/db.types";
+import { getDictionary, type Locale } from "@/lib/get-dictionary";
 
 export const dynamic = "force-dynamic";
 
-const Dashboard = async () => {
+const Dashboard = async ({ params }: { params: Promise<{ lang: string }> }) => {
+    const { lang } = await params;
+    const dictionary = await getDictionary(lang as Locale);
+
     const recentFiles = await getFiles({ types: [], limit: 8, onlyOwner: true });
     const totalSpace = await getTotalSpaceUsed();
     const folders = await getFolders({ onlyOwner: true, trashed: false, fetchAll: true, parentFolderId: null });
@@ -23,19 +27,22 @@ const Dashboard = async () => {
         folderRows.map((f: any) => f.$id)
     );
 
-    const usageSummary = getUsageSummary(totalSpace);
+    const usageSummary = getUsageSummary(totalSpace, dictionary);
 
     const totalFolderFiles = Object.values(folderFileCounts).reduce(
         (acc: number, count: number) => acc + count,
         0
     );
 
+    const folderText = totalFolderFiles === 1
+      ? dictionary.dashboard.filesInFolders.replace("{count}", String(totalFolderFiles))
+      : dictionary.dashboard.filesInFolders_plural.replace("{count}", String(totalFolderFiles));
+
     return (
         <div className="dashboard-container">
             <section>
                 <Chart used={totalSpace?.used || 0} />
 
-                {/* Uploaded file type summaries */}
                 <ul className="dashboard-summary-list">
                     {usageSummary.map((summary) => (
                         <Link
@@ -58,7 +65,7 @@ const Dashboard = async () => {
                                 </div>
 
                                 <h5 className="summary-type-title">{summary.title}</h5>
-                                <Separator className="bg-light-400" />
+                                <Separator className="bg-light-400 dark:bg-dark-200" />
                                 <FormattedDateTime
                                     date={summary.latestDate}
                                     className="text-center"
@@ -66,33 +73,32 @@ const Dashboard = async () => {
                             </div>
                         </Link>
                     ))}
-                    <Link href="/folders" className="dashboard-summary-card">
+                    <Link href={`/${lang}/folders`} className="dashboard-summary-card">
                         <div className="space-y-4">
                             <div className="flex justify-between gap-3">
                                 <Image
                                     src="/assets/icons/file-folder-light.svg"
                                     width={100}
                                     height={100}
-                                    alt="Folders"
+                                    alt={dictionary.dashboard.folders}
                                     className="summary-type-icon"
                                 />
                                 <h4 className="summary-type-size">
                                     {totalFolders}
                                 </h4>
                             </div>
-                            <h5 className="summary-type-title">Folders</h5>
-                            <Separator className="bg-light-400" />
+                            <h5 className="summary-type-title">{dictionary.dashboard.folders}</h5>
+                            <Separator className="bg-light-400 dark:bg-dark-200" />
                             <p className="body-2 text-center">
-                                {totalFolderFiles} file{totalFolderFiles !== 1 ? "s" : ""} in folders
+                                {folderText}
                             </p>
                         </div>
                     </Link>
                 </ul>
             </section>
 
-            {/* Recent files uploaded */}
             <section className="dashboard-recent-files">
-                <h2 className="h3 xl:h2 text-light-100">Recent files uploaded</h2>
+                <h2 className="h3 xl:h2 text-light-100">{dictionary.dashboard.recentFiles}</h2>
                 {recentFiles?.rows && recentFiles.rows.length > 0 ? (
                     <ul className="mt-5 flex flex-col gap-5">
                         {recentFiles.rows.map((file: FileRow) => (
@@ -127,7 +133,7 @@ const Dashboard = async () => {
                         ))}
                     </ul>
                 ) : (
-                    <p className="empty-list">No files uploaded</p>
+                    <p className="empty-list">{dictionary.dashboard.noFiles}</p>
                 )}
             </section>
         </div>

@@ -12,12 +12,14 @@ import { saveFileRecord } from "@/lib/actions/file.actions";
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID } from "appwrite";
 import UploadProgressList, { UploadingFile } from "@/components/UploadProgressList";
+import { useLocale } from "@/lib/locale-context";
 
 const CHUNK_SIZE = 5 * 1024 * 1024;
 
 const FolderFileUploader = ({ ownerId, accountId, folderId, className }: FileUploaderProps) => {
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     const path = usePathname();
+    const { dictionary: t } = useLocale();
 
     const uploadChunk = (
         url: string,
@@ -124,7 +126,7 @@ const FolderFileUploader = ({ ownerId, accountId, folderId, className }: FileUpl
             if (file.size > MAX_FILE_SIZE) {
                 toast.add({
                     type: "error",
-                    description: `${file.name} is too large. Max file size is 50MB.`,
+                    description: `${file.name} ${t.toast.fileTooLargeUpload}`,
                 });
                 continue;
             }
@@ -187,14 +189,14 @@ const FolderFileUploader = ({ ownerId, accountId, folderId, className }: FileUpl
                 if (error.message !== 'Upload aborted') {
                     toast.add({
                         type: "error",
-                        description: `Failed to upload ${item.file.name}: ${error.message || 'Unknown error'}`,
+                        description: `${t.toast.uploadFailed} ${item.file.name}: ${error.message || t.toast.unknownError}`,
                     });
                 }
                 URL.revokeObjectURL(item.url);
                 setUploadingFiles((prev) => prev.filter((f) => f.file.name !== item.file.name));
             }
         });
-    }, [ownerId, accountId, path, folderId]);
+    }, [ownerId, accountId, path, folderId, t]);
 
     const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
@@ -225,7 +227,7 @@ const FolderFileUploader = ({ ownerId, accountId, folderId, className }: FileUpl
                     width={20}
                     height={20}
                 />
-                <span>Upload</span>
+                <span>{t.common.upload}</span>
             </Button>
             <UploadProgressList
                 files={uploadingFiles}
