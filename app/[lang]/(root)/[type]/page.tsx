@@ -8,11 +8,13 @@ import TypeFolderList from "@/components/TypeFolderList";
 import { FileViewProvider } from "@/components/FileViewProvider";
 import FileViewToggle from "@/components/FileViewToggle";
 import { getCurrentUser } from "@/lib/actions/user.actions";
+import { getDictionary, type Locale } from "@/lib/get-dictionary";
 
 export const dynamic = "force-dynamic";
 
 const Page = async ({ searchParams, params }: SearchParamProps) => {
-    const type = ((await params)?.type as string) || "";
+    const { type, lang } = (await params) as { type: string; lang: string };
+    const dictionary = await getDictionary(lang as Locale);
     const searchText = ((await searchParams)?.query as string) || "";
     const sort = ((await searchParams)?.sort as string) || "$createdAt-desc";
     const isTrash = type === "trash";
@@ -61,32 +63,31 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
         <FileViewProvider>
             <div className="page-container">
                 <section className="w-full shrink-0">
-                    <h1 className="h1 capitalize">{isTrash ? "Trash" : type}</h1>
+                    <h1 className="h1 capitalize">{isTrash ? dictionary.files.trash : type}</h1>
 
                     <div className="total-size-section">
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                             <p className="body-1">
-                                Total: <span className="h5">{convertFileSize(totalSize)}</span>
+                                {dictionary.files.total} <span className="h5">{convertFileSize(totalSize)}</span>
                             </p>
                             <p className="body-1">
-                                Files: <span className="h5">{totalFiles}</span>
+                                {dictionary.files.fileCount} <span className="h5">{totalFiles}</span>
                             </p>
                             {isTrash && (
                                 <p className="body-1">
-                                    Folders: <span className="h5">{totalFolders}</span>
+                                    {dictionary.files.folderCount} <span className="h5">{totalFolders}</span>
                                 </p>
                             )}
                         </div>
 
                         <div className="sort-container">
-                            <p className="body-1 hidden text-light-200 sm:block">Sort by:</p>
+                            <p className="body-1 hidden text-light-200 sm:block">{dictionary.files.sortBy}</p>
                             <Sort />
                             <FileViewToggle />
                         </div>
                     </div>
                 </section>
 
-                {/* Trashed Folders */}
                 {isTrash && trashedFolders.length > 0 && (
                     <section className="mb-8">
                         <TypeFolderList
@@ -99,7 +100,6 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
                     </section>
                 )}
 
-                {/* Trashed Files */}
                 <TypeFileList files={files?.rows || []} isTrash={isTrash} currentUserId={currentUser?.$id} currentUserEmail={currentUser?.email} />
             </div>
         </FileViewProvider>

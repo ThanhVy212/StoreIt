@@ -20,16 +20,18 @@ import {cn} from "@/lib/utils";
 import {Button} from "@/components/ui/button";
 import FileUploader from "@/components/FileUploader";
 import {signOutUser} from "@/lib/actions/user.actions";
+import {useLocale} from "@/lib/locale-context";
 
 const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: MobileNavigationProps) => {
     const [open, setOpen] = useState<boolean>(false);
     const pathname = usePathname();
+    const { lang, dictionary: t } = useLocale();
 
     const isActive = (url: string, name: string) => {
         if (name === 'Folders') {
-            return pathname === url || pathname.startsWith('/folders');
+            return pathname === url || pathname.startsWith(`/${lang}/folders`);
         }
-        return pathname === url;
+        return pathname === `/${lang}${url}` || pathname === url;
     };
 
     return (
@@ -66,10 +68,10 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
 
                     <nav className="mobile-nav">
                         <ul className="mobile-nav-list">
-                            {navItems.map(({url, name, icon}) => {
+                            {navItems.map(({url, name, key, icon}) => {
                                 const active = isActive(url, name);
                                 return (
-                                    <Link key={name} href={url} className="lg:w-full">
+                                    <Link key={name} href={`/${lang}${url}`} className="lg:w-full">
                                         <li className={cn("mobile-nav-item", active && "shad-active")}>
                                             <Image
                                                 src={icon}
@@ -78,7 +80,7 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
                                                 height={24}
                                                 className={cn("nav-icon", active && "nav-icon-active")}
                                             />
-                                            <p>{name}</p>
+                                            <p>{t.nav[key as keyof typeof t.nav]}</p>
                                         </li>
                                     </Link>
                                 );

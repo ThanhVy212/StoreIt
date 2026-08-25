@@ -28,6 +28,7 @@ import {deleteFile, moveFileToTrash, renameFile, restoreFile, updateFileUsers, u
 import {usePathname} from "next/navigation";
 import {FileDetails, ShareInput} from "@/components/ActionsModalContent";
 import {toast} from "@/components/ui/toast";
+import {useLocale} from "@/lib/locale-context";
 
 
 
@@ -39,6 +40,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
     const [isLoading, setIsLoading] = useState(false);
     const [emails, setEmails] = useState<string[]>([]);
     const shareValidatorRef = useRef<(() => boolean) | null>(null);
+    const { dictionary: t } = useLocale();
 
     const path = usePathname();
     const isTrashed = Boolean(file.trashed);
@@ -94,16 +96,16 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                     setName(removeExtension(success.name));
                 }
                 if (currentAction.value === "trash") {
-                    toast.add({ type: "success", description: "File moved to trash." });
+                    toast.add({ type: "success", description: t.toast.fileMovedToTrash });
                 }
                 if (currentAction.value === "restore") {
-                    toast.add({ type: "success", description: "File restored." });
+                    toast.add({ type: "success", description: t.toast.fileRestored });
                 }
                 if (currentAction.value === "delete") {
-                    toast.add({ type: "success", description: "File deleted permanently." });
+                    toast.add({ type: "success", description: t.toast.fileDeletedPermanently });
                 }
                 if (currentAction.value === "unshare") {
-                    toast.add({ type: "success", description: "File unshared successfully." });
+                    toast.add({ type: "success", description: t.toast.fileUnshared });
                 }
                 if (currentAction.value !== "share") {
                     closeAllModals();
@@ -112,7 +114,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
         } catch {
             toast.add({
                 type: "error",
-                description: "Something went wrong. Please try again.",
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsLoading(false);
@@ -142,13 +144,13 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
     const renderDialogContent = () => {
         if(!action || !['rename', 'share', 'delete', 'details'].includes(action.value)) return null;
 
-        const {value, label} = action;
+        const {value} = action;
 
         return (
             <DialogContent className="shad-dialog button">
                 <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                     <DialogTitle className="text-center text-light-100">
-                        {label}
+                        {t.actions[action.value as keyof typeof t.actions] || action.value}
                     </DialogTitle>
                     {value === "rename" && (
                         <Input
@@ -161,21 +163,21 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                         <FileDetails file={file} />
                     )}
                     {value === "share" && (
-                        <ShareInput file={file} onAddEmails={handleAddEmails} onRemove={handleRemoveUser} isOwner={isOwner} registerValidator={(fn) => { shareValidatorRef.current = fn; }} sharedEmails={emails}/>
+                        <ShareInput file={file} onAddEmails={handleAddEmails} onRemove={handleRemoveUser} isOwner={isOwner} registerValidator={(fn) => { shareValidatorRef.current = fn; }} sharedEmails={emails} onLoadingChange={setIsLoading}/>
                     )}
                     {value === "delete" && (
                         <p className="delete-confirmation">
-                            Permanently delete {` `}
+                            {t.actions.permanentlyDelete} {` `}
                             <span className="delete-file-name">{addExtension(name, file.extension!)}</span>?
-                            This cannot be undone.
+                            {t.actions.thisCannotBeUndone}
                         </p>
                     )}
                 </DialogHeader>
                 {(['rename', 'delete'].includes(value) || (value === 'share' && isOwner)) && (
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
-                        <Button onClick={closeAllModals} className="modal-cancel-button">Cancel</Button>
+                        <Button onClick={closeAllModals} className="modal-cancel-button">{t.actions.cancel}</Button>
                         <Button onClick={() => void handleAction()} className="modal-submit-button " disabled={isLoading}>
-                            <p className="capitalize">{value === "delete" ? "Delete forever" : value}</p>
+                            <p className="capitalize">{value === "delete" ? t.actions.deleteForever : t.actions[value as keyof typeof t.actions] || value}</p>
                             {isLoading && (
                                 <Image src="/assets/icons/loader.svg"
                                        alt="loader"
@@ -253,7 +255,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                                         width={30}
                                         height={30}
                                     />
-                                    {item.label}
+                                    {t.actions[item.key as keyof typeof t.actions] || item.label}
                                 </div>
                             </DropdownMenuItem>
                         ))}

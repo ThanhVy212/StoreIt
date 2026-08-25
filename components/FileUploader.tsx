@@ -12,12 +12,14 @@ import { saveFileRecord } from "@/lib/actions/file.actions";
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID } from "appwrite";
 import UploadProgressList, { UploadingFile } from "@/components/UploadProgressList";
+import { useLocale } from "@/lib/locale-context";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB Appwrite chunk threshold
 
 const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderProps) => {
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     const path = usePathname();
+    const { dictionary: t } = useLocale();
 
     const uploadChunk = (
         url: string,
@@ -126,8 +128,7 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
                     type: "error",
                     description: (
                         <span className="body-2 text-white">
-                            <span className="font-semibold">{file.name}</span> is too large.
-                            Max file size is 50MB.
+                            <span className="font-semibold">{file.name}</span> {t.toast.fileTooLargeUpload}
                         </span>
                     ),
                 });
@@ -192,14 +193,14 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
                 if (error.message !== 'Upload aborted') {
                     toast.add({
                         type: "error",
-                        description: `Failed to upload ${item.file.name}: ${error.message || 'Unknown error'}`,
+                        description: `${t.toast.uploadFailed} ${item.file.name}: ${error.message || t.toast.unknownError}`,
                     });
                 }
                 URL.revokeObjectURL(item.url);
                 setUploadingFiles((prev) => prev.filter((f) => f.file.name !== item.file.name));
             }
         });
-    }, [ownerId, accountId, path, folderId]);
+    }, [ownerId, accountId, path, folderId, t]);
 
     const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
@@ -232,10 +233,10 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
                 />{" "}
                 <span className="relative inline-flex overflow-hidden text-xs">
                     <div className="translate-y-0 skew-y-0 transition duration-500 group-hover:translate-y-[-160%] group-hover:skew-y-12">
-                        Upload
+                        {t.common.upload}
                     </div>
                     <div className="absolute translate-y-[164%] skew-y-12 transition duration-500 group-hover:translate-y-0 group-hover:skew-y-0">
-                        Upload
+                        {t.common.upload}
                     </div>
                 </span>
             </Button>
@@ -248,4 +249,3 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
 };
 
 export default FileUploader;
-

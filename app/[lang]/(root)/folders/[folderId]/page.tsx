@@ -3,6 +3,7 @@ import { getFiles } from "@/lib/actions/file.actions";
 import {
     getFolders,
     getFolderById,
+    getFolderAncestors,
     getFolderFileCountForMultiple,
     getFolderFileCount,
     getFolderSize
@@ -16,7 +17,9 @@ import { getCurrentUser } from "@/lib/actions/user.actions";
 import Link from "next/link";
 import CreateFolderButton from "@/components/CreateFolderButton";
 import FolderFileUploader from "@/components/FolderFileUploader";
+import Breadcrumb from "@/components/Breadcrumb";
 import { notFound } from "next/navigation";
+import { getDictionary, type Locale } from "@/lib/get-dictionary";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +27,8 @@ const FolderDetailPage = async ({
     params,
     searchParams,
 }: SearchParamProps) => {
-    const { folderId } = (await params) as { folderId: string };
+    const { folderId, lang } = (await params) as { folderId: string; lang: string };
+    const dictionary = await getDictionary(lang as Locale);
     const searchText = ((await searchParams)?.query as string) || "";
     const sort = ((await searchParams)?.sort as string) || "$createdAt-desc";
     const currentUser = await getCurrentUser();
@@ -68,18 +72,15 @@ const FolderDetailPage = async ({
 
     const totalSize = await getFolderSize(folderId);
 
+    const ancestors = await getFolderAncestors(folderId);
+
     return (
         <FileViewProvider>
             <div className="page-container">
                 <section className="w-full shrink-0">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link href="/folders" className="body-1 text-light-200 hover:text-light-100">
-                            Folders
-                        </Link>
-                        <span className="body-1 text-light-200">/</span>
-                    </div>
+                    <Breadcrumb ancestors={ancestors} />
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <h1 className="h1">{folder?.name || "Folder"}</h1>
+                        <h1 className="h1">{folder?.name || dictionary.folders.folders}</h1>
                         {currentUser && (
                             <div className="flex items-center gap-3">
                                 <FolderFileUploader
@@ -99,28 +100,27 @@ const FolderDetailPage = async ({
                     <div className="total-size-section">
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                             <p className="body-1">
-                                Size: <span className="h5">{convertFileSize(totalSize)}</span>
+                                {dictionary.folders.size} <span className="h5">{convertFileSize(totalSize)}</span>
                             </p>
                             <p className="body-1">
-                                Files: <span className="h5">{totalFileCount}</span>
+                                {dictionary.files.fileCount} <span className="h5">{totalFileCount}</span>
                             </p>
                             <p className="body-1">
-                                Subfolders: <span className="h5">{subfolderRows.length}</span>
+                                {dictionary.folders.subfolderCount} <span className="h5">{subfolderRows.length}</span>
                             </p>
                         </div>
 
                         <div className="sort-container">
-                            <p className="body-1 hidden text-light-200 sm:block">Sort by:</p>
+                            <p className="body-1 hidden text-light-200 sm:block">{dictionary.folders.sortBy}</p>
                             <Sort />
                             <FileViewToggle />
                         </div>
                     </div>
                 </section>
 
-                {/* Subfolders */}
                 {subfolderRows.length > 0 && (
                     <section className="mb-6">
-                        <h2 className="h3 text-light-100 mb-4">Subfolders</h2>
+                        <h2 className="h3 text-light-100 mb-4">{dictionary.folders.subfolders}</h2>
                         <TypeFolderList
                             folders={subfolderRows}
                             fileCounts={subfolderFileCounts}
@@ -130,9 +130,8 @@ const FolderDetailPage = async ({
                     </section>
                 )}
 
-                {/* Files in this folder */}
                 <section>
-                    <h2 className="h3 text-light-100 mb-4">Files</h2>
+                    <h2 className="h3 text-light-100 mb-4">{dictionary.common.files}</h2>
                     <TypeFileList
                         files={folderFiles}
                         currentUserId={currentUser?.$id}

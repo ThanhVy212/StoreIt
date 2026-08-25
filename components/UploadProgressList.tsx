@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Thumbnail from '@/components/Thumbnail';
 import UploadProgressBar from '@/components/UploadProgressBar';
 import { getFileType } from '@/lib/utils';
+import { useLocale } from '@/lib/locale-context';
 
 export interface UploadingFile {
     file: File;
@@ -22,11 +23,12 @@ interface UploadProgressListProps {
 }
 
 const UploadProgressList = ({ files, onRemoveFile }: UploadProgressListProps) => {
+    const { dictionary: t } = useLocale();
     if (files.length === 0) return null;
 
     return (
         <ul className="uploader-preview-list">
-            <h4 className="h4 text-light-100">Uploading ({files.length})</h4>
+            <h4 className="h4 text-light-100">{t.upload.uploading} ({files.length})</h4>
 
             {files.map(({ file, url, progress, loaded, total, status }) => {
                 const { type, extension } = getFileType(file.name);
@@ -73,4 +75,3 @@ const UploadProgressList = ({ files, onRemoveFile }: UploadProgressListProps) =>
 };
 
 export default UploadProgressList;
-

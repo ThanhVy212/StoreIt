@@ -36,6 +36,7 @@ export interface ShareInputProps {
     isOwner?: boolean;
     registerValidator?: (validate: () => boolean) => void;
     sharedEmails?: string[];
+    onLoadingChange?: (loading: boolean) => void;
 }
 
 export type FileViewMode = 'grid' | 'list';

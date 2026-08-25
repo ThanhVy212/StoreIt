@@ -9,6 +9,7 @@ import {getFiles} from "@/lib/actions/file.actions";
 import Thumbnail from "@/components/Thumbnail";
 import FormattedDateTime from "@/components/FormattedDateTime";
 import { useDebounce } from 'use-debounce';
+import {useLocale} from "@/lib/locale-context";
 
 const Search = () => {
     const [query, setQuery] = useState('');
@@ -17,6 +18,7 @@ const Search = () => {
     const [results, setResults] = useState<FileRow[]>([]);
     const [open, setOpen] = useState(false);
     const [debouncedQuery] = useDebounce(query, 300);
+    const { lang, dictionary: t } = useLocale();
 
     const router = useRouter();
     const path = usePathname();
@@ -56,13 +58,13 @@ const Search = () => {
         setOpen(false);
         setResults([]);
         if (file.folderId) {
-            router.push(`/folders/${file.folderId}?query=${file.name}`);
+            router.push(`/${lang}/folders/${file.folderId}?query=${file.name}`);
         } else if (file.type === "other" || (file.type as string) === "audio") {
-            router.push(`/others?query=${file.name}`);
+            router.push(`/${lang}/others?query=${file.name}`);
         } else if (file.type === "video") {
-            router.push(`/video?query=${file.name}`);
+            router.push(`/${lang}/video?query=${file.name}`);
         } else {
-            router.push(`/${file.type}s?query=${file.name}`);
+            router.push(`/${lang}/${file.type}s?query=${file.name}`);
         }
     }
 
@@ -90,7 +92,7 @@ const Search = () => {
 
                 <Input
                     value={query}
-                    placeholder="Search..."
+                    placeholder={t.search.placeholder}
                     className="search-input"
                     onChange={(e) => setQuery(e.target.value)}
                 />
@@ -126,7 +128,7 @@ const Search = () => {
                             ))
                         ) : (
                             <li className="empty-result">
-                                No files found
+                                {t.search.noFiles}
                             </li>
                         )}
                     </ul>

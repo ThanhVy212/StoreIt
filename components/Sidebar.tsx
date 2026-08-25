@@ -6,21 +6,23 @@ import Image from "next/image";
 import {navItems} from "@/constants";
 import {usePathname} from "next/navigation";
 import {cn} from "@/lib/utils";
+import {useLocale} from "@/lib/locale-context";
 
 
 const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
     const pathname = usePathname();
+    const { lang, dictionary: t } = useLocale();
 
     const isActive = (url: string, name: string) => {
         if (name === 'Folders') {
-            return pathname === url || pathname.startsWith('/folders');
+            return pathname === url || pathname.startsWith(`/${lang}/folders`);
         }
-        return pathname === url;
+        return pathname === `/${lang}${url}` || pathname === url;
     };
 
     return (
         <aside className="sidebar">
-            <Link href="/">
+            <Link href={`/${lang}`}>
                 <Image
                     src="/assets/icons/logo-full-brand.svg"
                     alt="logo"
@@ -40,10 +42,10 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
 
             <nav className="sidebar-nav">
                 <ul className="flex flex-1 flex-col gap-6">
-                    {navItems.map(({url, name, icon}) => {
+                    {navItems.map(({url, name, key, icon}) => {
                         const active = isActive(url, name);
                         return (
-                            <Link key={name} href={url} className="lg:w-full">
+                            <Link key={name} href={`/${lang}${url}`} className="lg:w-full">
                                 <li className={cn("sidebar-nav-item", active && "shad-active")}>
                                     <Image
                                         src={icon}
@@ -52,7 +54,7 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
                                         height={24}
                                         className={cn("nav-icon", active && "nav-icon-active")}
                                     />
-                                    <p className="hidden lg:block">{name}</p>
+                                    <p className="hidden lg:block">{t.nav[key as keyof typeof t.nav]}</p>
                                 </li>
                             </Link>
                         );
@@ -62,7 +64,7 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
 
             <Image src="/assets/images/files-2.png" alt="logo" width={506} height={418} className="w-full" />
 
-            <Link href="/settings" className="sidebar-user-info">
+            <Link href={`/${lang}/settings`} className="sidebar-user-info">
                 <Image src={avatar} alt="Avatar" width={44} height={44} className="sidebar-user-avatar" />
                 <div className="hidden lg:block">
                     <p className="subtitle-2 capitalize">{fullName}</p>

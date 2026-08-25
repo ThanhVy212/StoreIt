@@ -7,6 +7,7 @@ import { FileCardProps, FileTableListProps } from '@/types/db.types';
 import { cn, convertFileSize, formatDateTime, getFileIcon } from '@/lib/utils';
 import ActionDropdown from '@/components/ActionDropdown';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLocale } from '@/lib/locale-context';
 
 const getFileUrl = (url: string) =>
     url?.includes('project=undefined')
@@ -100,14 +101,15 @@ const FileTableList = ({
     onToggleSelect,
     currentUserId,
 }: FileTableListProps) => {
+    const { dictionary: t } = useLocale();
     return (
         <section className="file-table">
             <div className="file-table-header">
                 <span className="file-table-cell file-table-cell-check" />
-                <span className="file-table-cell">Name</span>
-                <span className="file-table-cell">Owner</span>
-                <span className="file-table-cell file-table-header-date">Date modified</span>
-                <span className="file-table-cell file-table-header-size">File size</span>
+                <span className="file-table-cell">{t.files.name}</span>
+                <span className="file-table-cell">{t.files.owner}</span>
+                <span className="file-table-cell file-table-header-date">{t.files.dateModified}</span>
+                <span className="file-table-cell file-table-header-size">{t.files.fileSize}</span>
                 <span className="file-table-cell file-table-cell-actions" />
             </div>
 

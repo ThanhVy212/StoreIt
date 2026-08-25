@@ -297,6 +297,30 @@ export const getFolderById = async (folderId: string) => {
     }
 };
 
+export const getFolderAncestors = async (folderId: string): Promise<{ id: string; name: string }[]> => {
+    const { tablesDB } = await createAdminClient();
+    const ancestors: { id: string; name: string }[] = [];
+    let currentId: string | null = folderId;
+
+    try {
+        while (currentId) {
+            const folder = await tablesDB.getRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.foldersTableId,
+                rowId: currentId,
+            });
+
+            ancestors.unshift({ id: folder.$id, name: folder.name });
+            currentId = (folder as any).parentFolderId ?? null;
+        }
+
+        return ancestors;
+    } catch (err) {
+        console.log("Failed to get folder ancestors", err);
+        return ancestors;
+    }
+};
+
 export const getFolderFileCount = async (folderId: string) => {
     const { tablesDB } = await createAdminClient();
 

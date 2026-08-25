@@ -4,6 +4,7 @@ import { Poppins, Geist } from 'next/font/google';
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toast";
+import { cookies } from "next/headers";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -18,10 +19,13 @@ export const metadata: Metadata = {
   description: "StoreIt - The only storage solution you need",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value || "en";
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={cn("font-poppins", "antialiased", poppins.variable, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col">

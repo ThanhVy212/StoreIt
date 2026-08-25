@@ -7,6 +7,7 @@ import { FolderRow } from '@/types/db.types';
 import { formatDateTime } from '@/lib/utils';
 import FolderActionDropdown from '@/components/FolderActionDropdown';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLocale } from '@/lib/locale-context';
 
 const FolderTableRow = ({
     folder,
@@ -25,6 +26,7 @@ const FolderTableRow = ({
     currentUserId?: string;
     currentUserEmail?: string;
 }) => {
+    const { lang } = useLocale();
     const folderIcon = fileCount > 0
         ? '/assets/icons/file-items-folder.svg'
         : '/assets/icons/file-empty-folder.svg';
@@ -65,7 +67,7 @@ const FolderTableRow = ({
                 </div>
             ) : (
                 <Link
-                    href={`/folders/${folder.$id}`}
+                    href={`/${lang}/folders/${folder.$id}`}
                     className="file-table-cell file-table-cell-name"
                 >
                     {nameContent}
@@ -123,14 +125,15 @@ const FolderTableList = ({
     currentUserId?: string;
     currentUserEmail?: string;
 }) => {
+    const { dictionary: t } = useLocale();
     return (
         <section className="file-table">
             <div className="file-table-header">
                 <span className="file-table-cell file-table-cell-check" />
-                <span className="file-table-cell">Name</span>
-                <span className="file-table-cell">Owner</span>
-                <span className="file-table-cell file-table-header-date">Date modified</span>
-                <span className="file-table-cell file-table-header-size">Contents</span>
+                <span className="file-table-cell">{t.files.name}</span>
+                <span className="file-table-cell">{t.files.owner}</span>
+                <span className="file-table-cell file-table-header-date">{t.files.dateModified}</span>
+                <span className="file-table-cell file-table-header-size">{t.files.contents}</span>
                 <span className="file-table-cell file-table-cell-actions" />
             </div>
 

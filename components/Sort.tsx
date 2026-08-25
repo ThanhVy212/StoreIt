@@ -10,12 +10,13 @@ import {
 } from "@/components/ui/select"
 import {usePathname, useRouter} from "next/navigation";
 import {sortTypes} from "@/constants";
-
+import {useLocale} from "@/lib/locale-context";
 
 
 const Sort = () => {
     const router = useRouter();
     const path = usePathname();
+    const { dictionary: t } = useLocale();
 
     const handleSort = (value: string | null) => {
         router.push(`${path}?sort=${value}`);
@@ -34,7 +35,7 @@ const Sort = () => {
                             className="shad-select-item"
                             value={item.value}
                         >
-                            {item.label}
+                            {t.sort[item.key as keyof typeof t.sort]}
                         </SelectItem>
                     ))}
                 </SelectGroup>

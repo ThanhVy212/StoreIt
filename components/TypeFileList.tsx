@@ -18,6 +18,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import {TypeFileListProps} from "@/types/db.types";
+import {useLocale} from "@/lib/locale-context";
 
 const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail }: TypeFileListProps) => {
     const { viewMode } = useFileView();
@@ -26,6 +27,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const path = usePathname();
+    const { dictionary: t } = useLocale();
     const isAllSelected = files.length > 0 && selectedIds.length === files.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < files.length;
     const handleToggleSelectAll = () => {
@@ -58,13 +60,13 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
             await moveFilesToTrash({ fileIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Moved ${selectedIds.length} file${selectedIds.length > 1 ? 's' : ''} to trash.`,
+                description: `${t.toast.fileMovedToTrash}`,
             });
             setSelectedIds([]);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to move files to trash. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsUpdating(false);
@@ -78,13 +80,13 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
             await restoreFiles({ fileIds: selectedIds, path });
             toast.add({
                 type: 'success',
-                description: `Restored ${selectedIds.length} file${selectedIds.length > 1 ? 's' : ''}.`,
+                description: `${t.toast.fileRestored}`,
             });
             setSelectedIds([]);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to restore files. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsUpdating(false);
@@ -105,14 +107,14 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
             });
             toast.add({
                 type: 'success',
-                description: `Permanently deleted ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}.`,
+                description: `${t.toast.fileDeletedPermanently}`,
             });
             setSelectedIds([]);
             setIsDeleteDialogOpen(false);
         } catch {
             toast.add({
                 type: 'error',
-                description: 'Failed to delete selected files. Please try again.',
+                description: t.toast.somethingWrong,
             });
         } finally {
             setIsDeleting(false);
@@ -120,12 +122,14 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
     };
 
     if (files.length === 0) {
-        return <p className="empty-list">{isTrash ? 'Trash is empty' : 'No files uploaded'}</p>;
+        return <p className="empty-list">{isTrash ? 'Trash is empty' : t.dashboard.noFiles}</p>;
     }
+
+    const selectedCount = selectedIds.length;
+    const filesText = selectedCount === 1 ? t.deleteConfirm.selectedFile : t.deleteConfirm.selectedFiles;
 
     return (
         <div className="file-type-list">
-            {/* Selection Toolbar */}
             <div className="selection-toolbar">
                 <div className="selection-toolbar-left">
                     <Checkbox
@@ -139,10 +143,10 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                         htmlFor="select-all-files"
                         className="body-2 selection-toolbar-label"
                     >
-                        Select All{' '}
+                        {t.common.selectAll}{' '}
                         {selectedIds.length > 0 && (
                             <span className="selection-toolbar-count">
-                    ({selectedIds.length} / {files.length} selected)
+                    ({selectedIds.length} / {files.length} {t.selection.selected})
                 </span>
                         )}
                     </label>
@@ -164,7 +168,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                                     width={16}
                                     height={16}
                                 />
-                                <span>Download ({selectedIds.length})</span>
+                                <span>{t.selection.download} ({selectedIds.length})</span>
                             </Button>
                         )}
 
@@ -184,7 +188,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                                         width={16}
                                         height={16}
                                     />
-                                    <span>Restore ({selectedIds.length})</span>
+                                    <span>{t.selection.restore} ({selectedIds.length})</span>
                                 </Button>
                                 <Button
                                     type="button"
@@ -199,7 +203,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                                         width={16}
                                         height={16}
                                     />
-                                    <span>Delete forever ({selectedIds.length})</span>
+                                    <span>{t.selection.deleteForever} ({selectedIds.length})</span>
                                 </Button>
                             </>
                         ) : (
@@ -217,7 +221,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                                     width={16}
                                     height={16}
                                 />
-                                <span>Move to trash ({selectedIds.length})</span>
+                                <span>{t.selection.moveToTrash} ({selectedIds.length})</span>
                             </Button>
                         )}
 
@@ -228,7 +232,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                             className="selection-toolbar-clear"
                             onClick={handleClearSelection}
                         >
-                            Clear
+                            {t.common.clear}
                         </Button>
                     </div>
                 )}
@@ -262,14 +266,14 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                 <DialogContent className="shad-dialog button">
                     <DialogHeader className="flex flex-col gap-3 min-w-0 w-full overflow-hidden">
                         <DialogTitle className="text-center text-light-100">
-                            Delete {selectedIds.length} file{selectedIds.length > 1 ? 's' : ''} forever
+                            {t.deleteConfirm.deleteFilesForever.replace("{count}", String(selectedIds.length))}
                         </DialogTitle>
                         <p className="delete-confirmation text-center">
-                            Are you sure you want to permanently delete{' '}
+                            {t.deleteConfirm.confirmDeleteFiles}{' '}
                             <span className="font-semibold text-dark-200">
-                                {selectedIds.length} selected file{selectedIds.length > 1 ? 's' : ''}
+                                {selectedIds.length} {filesText}
                             </span>
-                            ? This action cannot be undone.
+                            ? {t.deleteConfirm.actionCannotBeUndone}
                         </p>
                     </DialogHeader>
                     <DialogFooter className="flex flex-col gap-3 md:flex-row">
@@ -278,14 +282,14 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                             className="modal-cancel-button"
                             disabled={isDeleting}
                         >
-                            Cancel
+                            {t.actions.cancel}
                         </Button>
                         <Button
                             onClick={handleDeleteSelected}
                             className="modal-submit-button"
                             disabled={isDeleting}
                         >
-                            <p>Delete forever</p>
+                            <p>{t.actions.deleteForever}</p>
                             {isDeleting && (
                                 <Image
                                     src="/assets/icons/loader.svg"

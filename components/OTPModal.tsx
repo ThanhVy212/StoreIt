@@ -22,6 +22,7 @@ import Image from "next/image";
 import {useRouter} from "next/navigation";
 import {verifySecret, sendEmailOTP} from "@/lib/actions/user.actions";
 import {toast} from "@/components/ui/toast";
+import {useLocale} from "@/lib/locale-context";
 
 
 const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
@@ -31,6 +32,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
     const [isLoading, setIsLoading] = useState(false);
     const [cooldown, setCooldown] = useState(30);
     const [currentAccountId, setCurrentAccountId] = useState(accountId);
+    const { lang, dictionary: t } = useLocale();
 
     useEffect(() => {
         if (cooldown <= 0) return;
@@ -45,7 +47,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
         if (!password || password.length < 6) {
             toast.add({
                 type: "warning",
-                description: "Please enter the complete 6-digit OTP code.",
+                description: t.otp.completeCode,
             });
             return;
         }
@@ -58,10 +60,10 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
             if (result?.sessionId) {
                 toast.add({
                     type: "success",
-                    description: "Signed in successfully!",
+                    description: t.toast.signedIn,
                 });
                 setIsOpen(false);
-                router.push("/");
+                router.push(`/${lang}`);
             } else {
                 const errStr = (result?.error || "").toLowerCase();
                 const isExpired = errStr.includes("expire") || errStr.includes("token");
@@ -69,12 +71,12 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                 if (isExpired) {
                     toast.add({
                         type: "error",
-                        description: "The OTP code has expired. Please request a new one.",
+                        description: t.otp.expired,
                     });
                 } else {
                     toast.add({
                         type: "error",
-                        description: "Invalid OTP code. Please check and try again.",
+                        description: t.otp.invalid,
                     });
                 }
             }
@@ -86,12 +88,12 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
             if (isExpired) {
                 toast.add({
                     type: "error",
-                    description: "The OTP code has expired. Please request a new one.",
+                    description: t.otp.expired,
                 });
             } else {
                 toast.add({
                     type: "error",
-                    description: "Failed to verify OTP. Please try again.",
+                    description: t.otp.verifyFailed,
                 });
             }
         } finally {
@@ -109,19 +111,19 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                 setCooldown(30);
                 toast.add({
                     type: "success",
-                    description: "A new OTP code has been sent to your email.",
+                    description: t.otp.resentSuccess,
                 });
             } else {
                 toast.add({
                     type: "error",
-                    description: "Failed to resend OTP. Please try again.",
+                    description: t.otp.resentFailed,
                 });
             }
         } catch (err) {
             console.log("Failed to resend OTP", err);
             toast.add({
                 type: "error",
-                description: "Failed to resend OTP. Please try again.",
+                description: t.otp.resentFailed,
             });
         }
     };
@@ -130,7 +132,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
         <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
             <AlertDialogContent className="shad-alert-dialog">
                 <AlertDialogHeader className="relative justify-center">
-                    <AlertDialogTitle className="h2 text-center">Enter your OTP</AlertDialogTitle>
+                    <AlertDialogTitle className="h2 text-center">{t.otp.enterOtp}</AlertDialogTitle>
                     <Image
                         src="/assets/icons/close-dark.svg"
                         alt="close"
@@ -140,7 +142,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                         className="otp-close-button"
                     />
                     <AlertDialogDescription className="subtitle-2 text-center text-light-100">
-                        We&apos;ve sent a code to <span className="pl-1 text-brand">{email}</span>
+                        {t.otp.sentCode} <span className="pl-1 text-brand">{email}</span>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
@@ -162,7 +164,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                             className="shad-submit-btn h-12"
                             type="button"
                         >
-                            Submit
+                            {t.otp.submit}
 
                             {isLoading && (
                                 <Image src="/assets/icons/loader.svg"
@@ -176,7 +178,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                         </AlertDialogAction>
 
                         <div className="subtitle-2 mt-2 text-center text-light-100">
-                            Didn&apos;t get a code?
+                            {t.otp.noCode}
                             <Button
                                 type="button"
                                 variant="link"
@@ -184,7 +186,7 @@ const OtpModal = ({accountId, email} : {accountId: string, email: string}) => {
                                 onClick={handleResendOtp}
                                 disabled={cooldown > 0}
                             >
-                                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend"}
+                                {cooldown > 0 ? t.otp.resendIn.replace("{seconds}", String(cooldown)) : t.otp.resend}
                             </Button>
                         </div>
                     </div>
