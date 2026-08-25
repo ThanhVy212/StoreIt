@@ -29,9 +29,12 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
 
     const isActive = (url: string, name: string) => {
         if (name === 'Folders') {
-            return pathname === url || pathname.startsWith(`/${lang}/folders`);
+            return pathname === `/${lang}/folders` || pathname.startsWith(`/${lang}/folders`);
         }
-        return pathname === `/${lang}${url}` || pathname === url;
+        if (url === '/') {
+            return pathname === `/${lang}` || pathname === `/${lang}/`;
+        }
+        return pathname === `/${lang}${url}`;
     };
 
     return (

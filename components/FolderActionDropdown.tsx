@@ -26,14 +26,15 @@ import { usePathname } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { deleteFolder, getFolderFilesForDownload, moveFolderToTrash, renameFolder, restoreFolder, updateFolderUsers } from '@/lib/actions/folder.actions';
 import { constructDownloadUrl, convertFileSize, downloadFile, formatDateTime } from '@/lib/utils';
-import JSZip, {file} from 'jszip';
+import JSZip from 'jszip';
 import { getFolderSize } from '@/lib/actions/folder.actions';
 import { useLocale } from '@/lib/locale-context';
+import type { Dictionary } from '@/lib/get-dictionary';
 import {DetailRow} from "@/components/ActionsModalContent";
 
 const FolderDetails = ({folder, fileCount}: { folder: FolderRow; fileCount: number }) => {
     const [totalSize, setTotalSize] = useState<number | null>(null);
-    const { dictionary: t } = useLocale();
+    const { lang, dictionary: t } = useLocale();
 
     useEffect(() => {
         let cancelled = false;
@@ -48,8 +49,8 @@ const FolderDetails = ({folder, fileCount}: { folder: FolderRow; fileCount: numb
             <DetailRow label={t.actions.name} value={folder.name} />
             <DetailRow label={t.actions.size} value={totalSize !== null ? convertFileSize(totalSize) : t.actions.loading} />
             <DetailRow label={t.actions.files} value={fileCount.toString()} />
-            <DetailRow label={t.actions.created} value={formatDateTime(folder.$createdAt)} />
-            <DetailRow label={t.actions.modified} value={formatDateTime(folder.$updatedAt)} />
+            <DetailRow label={t.actions.created} value={formatDateTime(folder.$createdAt, lang)} />
+            <DetailRow label={t.actions.modified} value={formatDateTime(folder.$updatedAt, lang)} />
             {folder.owner && (
                 <DetailRow label={t.actions.owner} value={folder.owner.email} avatar={folder.owner?.avatar} />
             )}
@@ -57,7 +58,7 @@ const FolderDetails = ({folder, fileCount}: { folder: FolderRow; fileCount: numb
     );
 };
 
-const downloadFolderAsZip = async (folderId: string, folderName: string, t: any) => {
+const downloadFolderAsZip = async (folderId: string, folderName: string, t: Dictionary) => {
     try {
         const files = await getFolderFilesForDownload(folderId);
 
@@ -219,8 +220,9 @@ const FolderActionDropdown = ({
                     )}
                     {action === 'delete' && (
                         <p className="delete-confirmation">
-                            {t.actions.permanentlyDelete} folder{' '}
-                            <span className="delete-file-name">{folder.name}</span>?
+                            <span className="delete-file-name">
+                                {t.actions.permanentlyDeleteFolder.replace('{name}', folder.name)}
+                            </span>
                             {t.actions.thisCannotBeUndone}
                         </p>
                     )}

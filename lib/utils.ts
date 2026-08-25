@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { appwriteConfig } from '@/lib/appwrite/config';
+import type { Dictionary } from '@/lib/get-dictionary';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -134,7 +135,7 @@ export const formatDateTime = (isoString: string | null | undefined, locale?: st
     const timePart = new Intl.DateTimeFormat(localeCode, {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
+      hour12: locale !== 'vi',
     }).format(date);
 
     const datePart = new Intl.DateTimeFormat(localeCode, {
@@ -259,7 +260,7 @@ export const downloadFile = async (url: string, fileName: string) => {
 };
 
 // DASHBOARD UTILS
-export const getUsageSummary = (totalSpace: any, dictionary?: any) => {
+export const getUsageSummary = (totalSpace: any, dictionary?: Dictionary) => {
   return [
     {
       title: dictionary?.nav?.documents || 'Documents',

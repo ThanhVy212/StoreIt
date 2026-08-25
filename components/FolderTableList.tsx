@@ -88,7 +88,7 @@ const FolderTableRow = ({
             </p>
 
             <p className="file-table-cell file-table-cell-date">
-                {formatDateTime(folder.$updatedAt || folder.$createdAt)}
+                {formatDateTime(folder.$updatedAt || folder.$createdAt, lang)}
             </p>
 
             <p className="file-table-cell file-table-cell-size">

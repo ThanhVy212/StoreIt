@@ -42,7 +42,7 @@ export const DetailRow = ({label, value, avatar}: {label: string, value: string,
 )
 
 export const FileDetails = ({file}: {file: FileRow}) => {
-    const { dictionary: t } = useLocale();
+    const { lang, dictionary: t } = useLocale();
     return (
         <>
             <ImageThumbnail file={file} />
@@ -50,7 +50,7 @@ export const FileDetails = ({file}: {file: FileRow}) => {
                 <DetailRow label={t.fileDetails.format} value={file.extension ?? "—"} />
                 <DetailRow label={t.fileDetails.size} value={file.size != null ? convertFileSize(file.size) : "—"} />
                 <DetailRow label={t.fileDetails.uploadedBy} value={file.owner?.fullName ?? "—"} />
-                <DetailRow label={t.fileDetails.lastEdit} value={formatDateTime(file.$updatedAt)} />
+                <DetailRow label={t.fileDetails.lastEdit} value={formatDateTime(file.$updatedAt, lang)} />
                 <DetailRow label={t.fileDetails.owner} value={file.owner?.email ?? "—"} avatar={file.owner?.avatar} />
             </div>
         </>

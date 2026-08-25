@@ -25,6 +25,7 @@ const FileTableRow = ({
     currentUserId,
     currentUserEmail,
 }: FileCardProps) => {
+    const { lang } = useLocale();
     const fileUrl = getFileUrl(file.url);
     const modifiedAt = file.$updatedAt || file.$createdAt;
 
@@ -78,7 +79,7 @@ const FileTableRow = ({
             </p>
 
             <p className="file-table-cell file-table-cell-date">
-                {formatDateTime(modifiedAt)}
+                {formatDateTime(modifiedAt, lang)}
             </p>
 
             <p className="file-table-cell file-table-cell-size">
@@ -101,7 +102,7 @@ const FileTableList = ({
     onToggleSelect,
     currentUserId,
 }: FileTableListProps) => {
-    const { dictionary: t } = useLocale();
+    const { lang, dictionary: t } = useLocale();
     return (
         <section className="file-table">
             <div className="file-table-header">

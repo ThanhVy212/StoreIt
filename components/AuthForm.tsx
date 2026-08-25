@@ -87,13 +87,21 @@ const AuthForm = ({ type }: { type: FormType }) => {
               : t.toast.otpSent,
           });
         } else {
-          const fallbackError = type === "sign-up" ? t.toast.failedUpdateProfile : t.toast.somethingWrong;
+          const fallbackError = type === "sign-up" ? t.toast.failedCreateAccount : t.toast.somethingWrong;
           setErrorMessage(fallbackError);
         }
 
     } catch (error) {
-      const msg = error instanceof Error ? error.message : t.toast.somethingWrong;
-      setErrorMessage(msg);
+      const msg = error instanceof Error ? error.message.toLowerCase() : "";
+      if (msg.includes("otp")) {
+        setErrorMessage(t.toast.otpVerifyFailed);
+      } else if (msg.includes("email") && msg.includes("exist")) {
+        setErrorMessage(t.toast.failedCreateAccount);
+      } else if (msg.includes("network") || msg.includes("fetch")) {
+        setErrorMessage(t.toast.somethingWrong);
+      } else {
+        setErrorMessage(error instanceof Error && error.message ? error.message : t.toast.somethingWrong);
+      }
     } finally {
       setIsLoading(false);
     }

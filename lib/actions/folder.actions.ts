@@ -80,6 +80,10 @@ export const createFolder = async ({
     const { tablesDB } = await createAdminClient();
 
     try {
+        if (parentFolderId) {
+            await assertFolderAuthorized(tablesDB, parentFolderId);
+        }
+
         const uniqueName = await getUniqueFolderName(
             tablesDB,
             name,
@@ -310,8 +314,10 @@ export const getFolderAncestors = async (folderId: string): Promise<{ id: string
                 rowId: currentId,
             });
 
+            await assertFolderAuthorized(tablesDB, currentId);
+
             ancestors.unshift({ id: folder.$id, name: folder.name });
-            currentId = (folder as any).parentFolderId ?? null;
+            currentId = folder.parentFolderId ?? null;
         }
 
         return ancestors;
