@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FolderRow } from '@/types/db.types';
-import { formatDateTime } from '@/lib/utils';
+import { formatDateTime, getFileProxyUrl } from '@/lib/utils';
 import FolderActionDropdown from '@/components/FolderActionDropdown';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocale } from '@/lib/locale-context';
@@ -76,10 +76,11 @@ const FolderTableRow = ({
 
             <p className="file-table-cell file-table-cell-owner">
                 <Image
-                    src={folder.owner?.avatar ?? ''}
+                    src={getFileProxyUrl(folder.owner?.avatar) || '/assets/icons/avatar-default.svg'}
                     alt="avatar"
                     width={24}
                     height={24}
+                    unoptimized={getFileProxyUrl(folder.owner?.avatar).startsWith('/api/files/')}
                     className="file-table-owner-avatar"
                 />
                 <span className="file-table-owner-email">

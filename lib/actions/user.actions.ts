@@ -2,7 +2,7 @@
 
 import {createAdminClient, createSessionClient} from "@/lib/appwrite";
 import {appwriteConfig} from "@/lib/appwrite/config";
-import {ID, Query} from "node-appwrite";
+import {ID, Permission, Query, Role} from "node-appwrite";
 import {InputFile} from "node-appwrite/file";
 import {constructFileUrl, extractBucketFileId, parseStringify} from "@/lib/utils";
 import {cookies} from "next/headers";
@@ -215,12 +215,19 @@ export const uploadAvatar = async ({
     const fileName = `avatar/${currentUser.$id}.${extension}`;
     const inputFile = InputFile.fromBuffer(file, fileName);
 
+    const permissions = [
+        Permission.read(Role.any()),
+        Permission.update(Role.user(currentUser.$id)),
+        Permission.delete(Role.user(currentUser.$id)),
+    ];
+
     let bucketFile: Awaited<ReturnType<typeof storage.createFile>> | null = null;
     try {
         bucketFile = await storage.createFile({
             bucketId: appwriteConfig.bucketId,
             fileId: ID.unique(),
             file: inputFile,
+            permissions,
         });
 
         const avatarUrl = constructFileUrl(bucketFile.$id);
@@ -236,7 +243,7 @@ export const uploadAvatar = async ({
 
         if (currentUser.avatar) {
             const oldFileId = extractBucketFileId(currentUser.avatar);
-            if (oldFileId) {
+            if (oldFileId && oldFileId !== bucketFile.$id) {
                 await storage.deleteFile({
                     bucketId: appwriteConfig.bucketId,
                     fileId: oldFileId,
@@ -258,4 +265,35 @@ export const uploadAvatar = async ({
             error: err instanceof Error ? err.message : "Failed to upload avatar.",
         });
     }
-};
+};
+
+export const getAppwriteJWT = async () => {
+    try {
+        const session = (await cookies()).get("appwrite-session");
+        if (!session?.value) {
+            return null;
+        }
+
+        const res = await fetch(`${appwriteConfig.endpointUrl}/account/jwt`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Appwrite-Project": appwriteConfig.projectId,
+                "X-Appwrite-Session": session.value,
+            },
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.error("Failed to create Appwrite JWT:", err);
+            return null;
+        }
+
+        const data = (await res.json()) as { jwt: string };
+        return data.jwt;
+    } catch (err) {
+        console.error("Failed to create Appwrite JWT:", err);
+        return null;
+    }
+};
+

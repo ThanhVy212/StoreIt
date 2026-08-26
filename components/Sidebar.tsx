@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {navItems} from "@/constants";
 import {usePathname} from "next/navigation";
-import {cn} from "@/lib/utils";
+import {cn, getFileProxyUrl} from "@/lib/utils";
 import {useLocale} from "@/lib/locale-context";
 
 
@@ -37,8 +37,8 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
                 <Image
                     src="/assets/icons/logo-brand.svg"
                     alt="logo"
-                    width={160}
-                    height={50}
+                    width={52}
+                    height={52}
                     className="lg:hidden"
                 />
             </Link>
@@ -68,7 +68,14 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
             <Image src="/assets/images/files-2.png" alt="logo" width={506} height={418} className="w-full" />
 
             <Link href={`/${lang}/settings`} className="sidebar-user-info">
-                <Image src={avatar} alt="Avatar" width={44} height={44} className="sidebar-user-avatar" />
+                <Image
+                    src={getFileProxyUrl(avatar)}
+                    alt="Avatar"
+                    width={44}
+                    height={44}
+                    unoptimized={getFileProxyUrl(avatar).startsWith('/api/files/')}
+                    className="sidebar-user-avatar"
+                />
                 <div className="hidden lg:block">
                     <p className="subtitle-2 capitalize">{fullName}</p>
                     <p className="caption">{email}</p>

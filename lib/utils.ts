@@ -216,18 +216,35 @@ export const getFileIcon = (
 };
 
 // APPWRITE URL UTILS
-// Construct appwrite file URL - https://appwrite.io/docs/apis/rest#images
 export const constructFileUrl = (bucketFileId: string) => {
   return `${appwriteConfig.endpointUrl}/storage/buckets/${appwriteConfig.bucketId}/files/${bucketFileId}/view?project=${appwriteConfig.projectId}`;
 };
 
 export const extractBucketFileId = (url: string): string | null => {
-  const match = url.match(/\/files\/([^/]+)\/view/);
-  return match ? match[1] : null;
+  if (!url) return null;
+  const apiMatch = url.match(/\/api\/files\/([^/?]+)/);
+  if (apiMatch) return apiMatch[1];
+  const cloudMatch = url.match(/\/files\/([^/?]+)/);
+  return cloudMatch ? cloudMatch[1] : null;
+};
+
+export const getFileProxyUrl = (url: string | null | undefined, isDownload = false): string => {
+  if (!url) return '';
+  if (url.startsWith('/api/files/')) {
+    if (isDownload && !url.includes('download=1')) {
+      return url.includes('?') ? `${url}&download=1` : `${url}?download=1`;
+    }
+    return url;
+  }
+  const bucketFileId = extractBucketFileId(url);
+  if (bucketFileId) {
+    return `/api/files/${bucketFileId}${isDownload ? '?download=1' : ''}`;
+  }
+  return url;
 };
 
 export const constructDownloadUrl = (bucketFileId: string) => {
-  return `${appwriteConfig.endpointUrl}/storage/buckets/${appwriteConfig.bucketId}/files/${bucketFileId}/download?project=${appwriteConfig.projectId}`;
+  return `/api/files/${bucketFileId}?download=1`;
 };
 
 

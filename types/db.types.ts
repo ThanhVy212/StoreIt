@@ -29,6 +29,15 @@ export type FolderRow = Models.Row & {
     trashed?: boolean | null;
 };
 
+export type FileLinkRow = Models.Row & {
+    fileId: string;
+    bucketFileId: string;
+    tokenId: string;
+    createdBy: string;
+    expiresAt: string;
+    revoked: boolean;
+};
+
 export interface ShareInputProps {
     file: FileRow;
     onAddEmails: (newEmails: string[]) => void;
@@ -37,6 +46,8 @@ export interface ShareInputProps {
     registerValidator?: (validate: () => boolean) => void;
     sharedEmails?: string[];
     onLoadingChange?: (loading: boolean) => void;
+    onPublicLinkRevoked?: () => void;
+    activePublicLink?: { tokenId: string; expiresAt: string; url: string } | null;
 }
 
 export type FileViewMode = 'grid' | 'list';

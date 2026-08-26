@@ -3,22 +3,73 @@
 import {createAdminClient} from "@/lib/appwrite";
 import {InputFile} from "node-appwrite/file";
 import {appwriteConfig} from "@/lib/appwrite/config";
-import {ID, Query} from "node-appwrite";
+import {ID, Permission, Query, Role} from "node-appwrite";
 import {constructFileUrl, formatFileName, getFileType, parseStringify, sanitizeFileName} from "@/lib/utils";
 import {revalidatePath} from "next/cache";
-import {getCurrentUser} from "@/lib/actions/user.actions";
+import {getCurrentUser, getUserByEmail} from "@/lib/actions/user.actions";
 import {UserRow} from "@/types/db.types";
 
+const getFileById = async (fileId: string) => {
+    const { tablesDB } = await createAdminClient();
+    return tablesDB.getRow({
+        databaseId: appwriteConfig.databaseId,
+        tableId: appwriteConfig.filesTableId,
+        rowId: fileId,
+    });
+};
+
+const assertFileAuthenticated = async () => {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+        throw new Error("Authentication required.");
+    }
+    return currentUser;
+};
+
+const assertFileOwner = async (fileId: string, currentUser: UserRow) => {
+    const file = await getFileById(fileId);
+    if (file.accountId !== currentUser.$id) {
+        throw new Error("You are not allowed to modify this file.");
+    }
+    return file;
+};
+
+const buildOwnerPermissions = (ownerAccountId: string) => [
+    Permission.read(Role.user(ownerAccountId)),
+    Permission.update(Role.user(ownerAccountId)),
+    Permission.delete(Role.user(ownerAccountId)),
+];
+
+const buildSharePermissions = (ownerAccountId: string, sharedAccountIds: string[]) => [
+    ...buildOwnerPermissions(ownerAccountId),
+    ...sharedAccountIds.map((id) => Permission.read(Role.user(id))),
+];
+
+const resolveAccountIds = async (emails: string[]): Promise<string[]> => {
+    const accountIds: string[] = [];
+    for (const email of emails) {
+        const user = await getUserByEmail(email);
+        if (user) {
+            accountIds.push(user.$id);
+        }
+    }
+    return accountIds;
+};
+
 export const uploadFile = async ({file, ownerId, accountId, path, folderId}: UploadFileProps) => {
+    const currentUser = await assertFileAuthenticated();
     const { storage, tablesDB } = await createAdminClient();
 
     try {
         const inputFile = InputFile.fromBuffer(file, file.name);
 
+        const permissions = buildOwnerPermissions(currentUser.$id);
+
         const bucketFile = await storage.createFile({
             bucketId: appwriteConfig.bucketId,
             fileId: ID.unique(),
             file: inputFile,
+            permissions,
         });
 
         const fileName = sanitizeFileName(bucketFile.name);
@@ -73,9 +124,18 @@ export const saveFileRecord = async ({
     path,
     folderId,
 }: SaveFileRecordProps) => {
+    const currentUser = await assertFileAuthenticated();
     const { storage, tablesDB } = await createAdminClient();
 
     try {
+        const permissions = buildOwnerPermissions(currentUser.$id);
+
+        await storage.updateFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: bucketFileId,
+            permissions,
+        });
+
         const fileName = sanitizeFileName(name);
         const { type, extension } = getFileType(fileName);
 
@@ -254,6 +314,8 @@ export const getFiles = async ({types = [], searchText = "", sort = "$createdAt-
 }
 
 export const renameFile = async({fileId, name, extension, path}: RenameFileProps) => {
+    const currentUser = await assertFileAuthenticated();
+    await assertFileOwner(fileId, currentUser);
     const {tablesDB} = await createAdminClient();
 
     try {
@@ -277,24 +339,21 @@ export const renameFile = async({fileId, name, extension, path}: RenameFileProps
 }
 
 export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersProps) => {
-    const currentUser = await getCurrentUser();
+    const currentUser = await assertFileAuthenticated();
+    const file = await assertFileOwner(fileId, currentUser);
 
-    if (!currentUser) {
-        throw new Error("Authentication required.");
-    }
-
-    const { tablesDB } = await createAdminClient();
+    const { tablesDB, storage } = await createAdminClient();
 
     try {
-        const file = await tablesDB.getRow({
-            databaseId: appwriteConfig.databaseId,
-            tableId: appwriteConfig.filesTableId,
-            rowId: fileId,
-        });
+        const sharedAccountIds = await resolveAccountIds(emails);
 
-        if (file.owner !== currentUser.$id) {
-            throw new Error("Only the file owner can update access.");
-        }
+        const storagePermissions = buildSharePermissions(currentUser.$id, sharedAccountIds);
+
+        await storage.updateFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: file.bucketFileId as string,
+            permissions: storagePermissions,
+        });
 
         const updatedFile = await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
@@ -315,22 +374,19 @@ export const updateFileUsers = async ({fileId, emails, path}: UpdateFileUsersPro
 };
 
 export const unshareFileForMe = async ({fileId, path}: {fileId: string; path: string}) => {
-    const currentUser = await getCurrentUser();
+    const currentUser = await assertFileAuthenticated();
 
-    if (!currentUser) {
-        throw new Error("Authentication required.");
-    }
-
-    const { tablesDB } = await createAdminClient();
+    const { tablesDB, storage } = await createAdminClient();
 
     try {
-        const file = await tablesDB.getRow({
-            databaseId: appwriteConfig.databaseId,
-            tableId: appwriteConfig.filesTableId,
-            rowId: fileId,
-        });
+        const file = await getFileById(fileId);
 
+        const isOwner = file.accountId === currentUser.$id;
         const currentUsers = (file.users as string[]) || [];
+
+        if (isOwner) {
+            throw new Error("Owner cannot unshare their own file. Use revoke access instead.");
+        }
 
         if (!currentUsers.includes(currentUser.email)) {
             throw new Error("You are not a recipient of this file.");
@@ -347,6 +403,16 @@ export const unshareFileForMe = async ({fileId, path}: {fileId: string; path: st
             },
         });
 
+        const ownerAccountId = file.accountId as string;
+        const remainingAccountIds = await resolveAccountIds(updatedUsers);
+        const storagePermissions = buildSharePermissions(ownerAccountId, remainingAccountIds);
+
+        await storage.updateFile({
+            bucketId: appwriteConfig.bucketId,
+            fileId: file.bucketFileId as string,
+            permissions: storagePermissions,
+        });
+
         revalidatePath(path);
 
         return parseStringify(updatedFile);
@@ -357,7 +423,18 @@ export const unshareFileForMe = async ({fileId, path}: {fileId: string; path: st
 };
 
 const setFilesTrashed = async (fileIds: string[], trashed: boolean, path: string) => {
+    const currentUser = await assertFileAuthenticated();
     const { tablesDB } = await createAdminClient();
+
+    const files = await Promise.all(
+        fileIds.map((fileId) => getFileById(fileId))
+    );
+
+    for (const file of files) {
+        if (file.accountId !== currentUser.$id) {
+            throw new Error("You are not allowed to modify this file.");
+        }
+    }
 
     await Promise.all(
         fileIds.map((fileId) =>
@@ -415,6 +492,9 @@ export const restoreFiles = async ({ fileIds, path }: TrashFilesProps) => {
 };
 
 export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) => {
+    const currentUser = await assertFileAuthenticated();
+    await assertFileOwner(fileId, currentUser);
+
     const { tablesDB, storage } = await createAdminClient();
 
     try {
@@ -441,9 +521,20 @@ export const deleteFile = async ({fileId, bucketFileId, path}: DeleteFileProps) 
 };
 
 export const deleteFiles = async ({files, path,}: DeleteFilesProps) => {
+    const currentUser = await assertFileAuthenticated();
     const { tablesDB, storage } = await createAdminClient();
 
     try {
+        const fileRecords = await Promise.all(
+            files.map((f) => getFileById(f.fileId))
+        );
+
+        for (const file of fileRecords) {
+            if (file.accountId !== currentUser.$id) {
+                throw new Error("You are not allowed to delete this file.");
+            }
+        }
+
         const deletePromises = files.map(async ({ fileId, bucketFileId }) => {
             await tablesDB.deleteRow({
                 databaseId: appwriteConfig.databaseId,
@@ -519,5 +610,151 @@ export const getTotalSpaceUsed = async () => {
             used: 0,
             all: 2 * 1024 * 1024 * 1024,
         };
+    }
+};
+
+export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePublicLinkProps) => {
+    const currentUser = await assertFileAuthenticated();
+    const file = await assertFileOwner(fileId, currentUser);
+
+    const { tokens, tablesDB } = await createAdminClient();
+
+    try {
+        // Revoke any existing active links for this file to ensure single active fresh token
+        const existingLinks = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.fileLinksTableId,
+            queries: [
+                Query.equal("fileId", [fileId]),
+                Query.equal("revoked", [false]),
+            ],
+        });
+
+        for (const oldLink of existingLinks.rows) {
+            await tokens.delete({ tokenId: oldLink.tokenId }).catch(() => {});
+            await tablesDB
+                .updateRow({
+                    databaseId: appwriteConfig.databaseId,
+                    tableId: appwriteConfig.fileLinksTableId,
+                    rowId: oldLink.$id,
+                    data: { revoked: true },
+                })
+                .catch(() => {});
+        }
+
+        const expiresAt = new Date(Date.now() + expiresIn * 60 * 60 * 1000);
+
+        const token = await tokens.createFileToken({
+            bucketId: appwriteConfig.bucketId,
+            fileId: file.bucketFileId as string,
+            expire: expiresAt.toISOString(),
+        });
+
+        const linkRow = {
+            fileId,
+            bucketFileId: file.bucketFileId,
+            tokenId: token.$id,
+            createdBy: currentUser.$id,
+            expiresAt: expiresAt.toISOString(),
+            revoked: false,
+        };
+
+        await tablesDB.createRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.fileLinksTableId,
+            rowId: ID.unique(),
+            data: linkRow,
+        });
+
+        const publicPath = `/api/files/${file.bucketFileId}?token=${token.$id}`;
+
+        revalidatePath(path);
+
+        return parseStringify({
+            tokenId: token.$id,
+            expiresAt: expiresAt.toISOString(),
+            url: publicPath,
+            bucketFileId: file.bucketFileId,
+        });
+    } catch (err) {
+        console.log('Failed to create public file link', err);
+        throw err;
+    }
+};
+
+export const revokePublicFileLink = async ({ fileId, tokenId, path }: RevokePublicLinkProps) => {
+    const currentUser = await assertFileAuthenticated();
+    await assertFileOwner(fileId, currentUser);
+
+    const { tokens, tablesDB } = await createAdminClient();
+
+    try {
+        const links = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.fileLinksTableId,
+            queries: [
+                Query.equal("fileId", [fileId]),
+                Query.equal("tokenId", [tokenId]),
+            ],
+        });
+
+        const link = links.rows[0];
+        if (!link) {
+            throw new Error("Link not found.");
+        }
+
+        await tokens.delete({
+            tokenId,
+        }).catch(() => {});
+
+        await tablesDB.updateRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.fileLinksTableId,
+            rowId: link.$id,
+            data: { revoked: true },
+        });
+
+        revalidatePath(path);
+
+        return parseStringify({ status: "success" });
+    } catch (err) {
+        console.log('Failed to revoke public file link', err);
+        throw err;
+    }
+};
+
+export const getFilePublicLinks = async (fileId: string) => {
+    const currentUser = await assertFileAuthenticated();
+    const file = await getFileById(fileId);
+
+    if (file.accountId !== currentUser.$id) {
+        throw new Error("You are not allowed to view links for this file.");
+    }
+
+    const { tablesDB } = await createAdminClient();
+
+    try {
+        const links = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.fileLinksTableId,
+            queries: [
+                Query.equal("fileId", [fileId]),
+                Query.equal("revoked", [false]),
+                Query.orderDesc("$createdAt"),
+            ],
+        });
+
+        const result = links.rows.map((link: any) => ({
+            tokenId: link.tokenId,
+            expiresAt: link.expiresAt,
+            url: `/api/files/${file.bucketFileId}?token=${link.tokenId}`,
+            bucketFileId: file.bucketFileId,
+            $createdAt: link.$createdAt,
+        }));
+
+        return parseStringify(result);
+    } catch (err) {
+        console.log('Failed to get file public links', err);
+        throw err;
     }
 };

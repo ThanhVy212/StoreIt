@@ -104,3 +104,15 @@ declare interface ThumbnailProps {
     className?: string;
     imageClassName?: string;
 }
+
+declare interface CreatePublicLinkProps {
+    fileId: string;
+    expiresIn: number;
+    path: string;
+}
+
+declare interface RevokePublicLinkProps {
+    fileId: string;
+    tokenId: string;
+    path: string;
+}

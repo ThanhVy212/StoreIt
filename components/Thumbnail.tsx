@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn, getFileIcon } from "@/lib/utils";
+import { cn, getFileIcon, getFileProxyUrl } from "@/lib/utils";
 import Image from "next/image";
 
 const Thumbnail = React.memo(({ type, extension, url = '', imageClassName, className }: ThumbnailProps) => {
@@ -9,10 +9,7 @@ const Thumbnail = React.memo(({ type, extension, url = '', imageClassName, class
     const isImage = type === 'image' && extension !== "svg";
     const isVideo = type === 'video';
 
-    // Fallback: Nếu url cũ trong database bị dính project=undefined thì tự động thay thế bằng project ID chuẩn
-    const sanitizedUrl = url.includes("project=undefined")
-        ? url.replace("project=undefined", `project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`)
-        : url;
+    const sanitizedUrl = getFileProxyUrl(url);
 
     return (
         <figure className={cn("thumbnail", className)}>
@@ -22,6 +19,7 @@ const Thumbnail = React.memo(({ type, extension, url = '', imageClassName, class
                     alt="thumbnail"
                     width={100}
                     height={100}
+                    unoptimized={sanitizedUrl.startsWith('/api/files/')}
                     onError={() => setHasError(true)}
                     className={cn(
                         "size-8 object-contain",
