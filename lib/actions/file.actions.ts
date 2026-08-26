@@ -625,7 +625,7 @@ export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePu
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.fileLinksTableId,
             queries: [
-                Query.equal("fileId", [fileId]),
+                Query.equal("bucketFileId", [file.bucketFileId as string]),
                 Query.equal("revoked", [false]),
             ],
         });
@@ -651,7 +651,7 @@ export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePu
         });
 
         const linkRow = {
-            fileId,
+            fileId: [fileId],
             bucketFileId: file.bucketFileId,
             tokenId: token.$id,
             createdBy: currentUser.$id,
@@ -684,7 +684,7 @@ export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePu
 
 export const revokePublicFileLink = async ({ fileId, tokenId, path }: RevokePublicLinkProps) => {
     const currentUser = await assertFileAuthenticated();
-    await assertFileOwner(fileId, currentUser);
+    const file = await assertFileOwner(fileId, currentUser);
 
     const { tokens, tablesDB } = await createAdminClient();
 
@@ -693,8 +693,8 @@ export const revokePublicFileLink = async ({ fileId, tokenId, path }: RevokePubl
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.fileLinksTableId,
             queries: [
-                Query.equal("fileId", [fileId]),
                 Query.equal("tokenId", [tokenId]),
+                Query.equal("bucketFileId", [file.bucketFileId as string]),
             ],
         });
 
@@ -738,7 +738,7 @@ export const getFilePublicLinks = async (fileId: string) => {
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.fileLinksTableId,
             queries: [
-                Query.equal("fileId", [fileId]),
+                Query.equal("bucketFileId", [file.bucketFileId as string]),
                 Query.equal("revoked", [false]),
                 Query.orderDesc("$createdAt"),
             ],

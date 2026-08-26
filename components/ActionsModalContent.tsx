@@ -358,16 +358,17 @@ export const ShareInput = ({
                                     </Button>
                                     <Button
                                         type="button"
+                                        variant="ghost"
                                         onClick={handleRevokeLink}
                                         disabled={isRevokingLink}
-                                        className="h-9 px-2.5 text-xs text-red hover:bg-red/10 border border-red/30 rounded-lg flex items-center gap-1 shrink-0"
+                                        className="h-9 px-2.5 text-xs text-red bg-red/10 hover:bg-red/20 border border-red/20 rounded-lg flex items-center gap-1 shrink-0 transition-colors"
                                         title={t.share.revokeLink}
                                     >
                                         <Image
                                             src="/assets/icons/delete.svg"
                                             alt="revoke"
-                                            width={14}
-                                            height={14}
+                                            width={16}
+                                            height={16}
                                         />
                                         {isRevokingLink && (
                                             <Image
