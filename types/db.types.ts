@@ -47,6 +47,7 @@ export interface ShareInputProps {
     sharedEmails?: string[];
     onLoadingChange?: (loading: boolean) => void;
     onPublicLinkRevoked?: () => void;
+    onLinkGenerated?: () => void;
     activePublicLink?: { tokenId: string; expiresAt: string; url: string } | null;
 }
 

@@ -81,8 +81,8 @@ export const uploadFile = async ({file, ownerId, accountId, path, folderId}: Upl
             url: constructFileUrl(bucketFile.$id),
             extension,
             size: bucketFile.sizeOriginal,
-            owner: ownerId,
-            accountId,
+            owner: currentUser.$id,
+            accountId: currentUser.$id,
             users: [],
             bucketFileId: bucketFile.$id,
             trashed: false,
@@ -145,8 +145,8 @@ export const saveFileRecord = async ({
             url: constructFileUrl(bucketFileId),
             extension,
             size,
-            owner: ownerId,
-            accountId,
+            owner: currentUser.$id,
+            accountId: currentUser.$id,
             users: [],
             bucketFileId,
             trashed: false,
@@ -613,35 +613,34 @@ export const getTotalSpaceUsed = async () => {
     }
 };
 
+const ALLOWED_LINK_HOURS = [12, 24, 72, 168];
+
 export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePublicLinkProps) => {
+    if (!ALLOWED_LINK_HOURS.includes(expiresIn)) {
+        throw new Error("Invalid link expiration.");
+    }
     const currentUser = await assertFileAuthenticated();
     const file = await assertFileOwner(fileId, currentUser);
-
     const { tokens, tablesDB } = await createAdminClient();
-
     try {
         // Revoke any existing active links for this file to ensure single active fresh token
         const existingLinks = await tablesDB.listRows({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.fileLinksTableId,
             queries: [
-                Query.equal("bucketFileId", [file.bucketFileId as string]),
+                Query.equal("fileId", [fileId]),
                 Query.equal("revoked", [false]),
             ],
         });
-
         for (const oldLink of existingLinks.rows) {
             await tokens.delete({ tokenId: oldLink.tokenId }).catch(() => {});
-            await tablesDB
-                .updateRow({
-                    databaseId: appwriteConfig.databaseId,
-                    tableId: appwriteConfig.fileLinksTableId,
-                    rowId: oldLink.$id,
-                    data: { revoked: true },
-                })
-                .catch(() => {});
+            await tablesDB.updateRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.fileLinksTableId,
+                rowId: oldLink.$id,
+                data: { revoked: true },
+            });
         }
-
         const expiresAt = new Date(Date.now() + expiresIn * 60 * 60 * 1000);
 
         const token = await tokens.createFileToken({

@@ -41,6 +41,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
     const [emails, setEmails] = useState<string[]>([]);
     const [activePublicLink, setActivePublicLink] = useState<{ tokenId: string; expiresAt: string; url: string } | null>(null);
     const shareValidatorRef = useRef<(() => boolean) | null>(null);
+    const linkGenerationRef = useRef(0);
     const { dictionary: t } = useLocale();
 
     const path = usePathname();
@@ -144,14 +145,17 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
     };
 
     const fetchPublicLinks = async () => {
+        const generation = ++linkGenerationRef.current;
         try {
             const links = await getFilePublicLinks(file.$id);
+            if (generation !== linkGenerationRef.current) return;
             if (Array.isArray(links) && links.length > 0) {
                 setActivePublicLink(links[0]);
             } else {
                 setActivePublicLink(null);
             }
         } catch {
+            if (generation !== linkGenerationRef.current) return;
             setActivePublicLink(null);
         }
     };
@@ -187,6 +191,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                             sharedEmails={emails}
                             onLoadingChange={setIsLoading}
                             onPublicLinkRevoked={() => setActivePublicLink(null)}
+                            onLinkGenerated={() => { linkGenerationRef.current++; }}
                             activePublicLink={activePublicLink}
                         />
                     )}

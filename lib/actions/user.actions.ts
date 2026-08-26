@@ -276,6 +276,7 @@ export const getAppwriteJWT = async () => {
 
         const res = await fetch(`${appwriteConfig.endpointUrl}/account/jwt`, {
             method: "POST",
+            signal: AbortSignal.timeout(10_000),
             headers: {
                 "Content-Type": "application/json",
                 "X-Appwrite-Project": appwriteConfig.projectId,
@@ -296,4 +297,4 @@ export const getAppwriteJWT = async () => {
         return null;
     }
 };
-
+

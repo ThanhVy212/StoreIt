@@ -70,6 +70,7 @@ export const ShareInput = ({
     onLoadingChange,
     activePublicLink,
     onPublicLinkRevoked,
+    onLinkGenerated,
 }: ShareInputProps) => {
     const [inputValue, setInputValue] = React.useState("");
     const [expirationHours, setExpirationHours] = React.useState<number>(24);
@@ -159,6 +160,7 @@ export const ShareInput = ({
                 path,
             });
 
+            onLinkGenerated?.();
             setPublicLink(result);
             const fullUrl = getFullPublicUrl(result.url);
             await navigator.clipboard.writeText(fullUrl);
