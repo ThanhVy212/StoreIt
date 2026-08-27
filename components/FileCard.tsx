@@ -4,7 +4,7 @@ import React from 'react';
 import {FileCardProps} from "@/types/db.types";
 import Link from "next/link";
 import Thumbnail from "@/components/Thumbnail";
-import { cn, convertFileSize } from "@/lib/utils";
+import { cn, convertFileSize, getFileProxyUrl } from "@/lib/utils";
 import FormattedDateTime from "@/components/FormattedDateTime";
 import ActionDropdown from "@/components/ActionDropdown";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,9 +13,7 @@ import {useLocale} from "@/lib/locale-context";
 
 const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelect, currentUserId, currentUserEmail}: FileCardProps) => {
     const { lang, dictionary: t } = useLocale();
-    const fileUrl = file.url?.includes("project=undefined")
-        ? file.url.replace("project=undefined", `project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`)
-        : file.url;
+    const fileUrl = getFileProxyUrl(file.url);
 
     return (
         <div className={cn("file-card relative group transition-all", isSelected && "file-card-selected")}>

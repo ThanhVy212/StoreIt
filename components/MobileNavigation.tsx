@@ -16,7 +16,7 @@ import {usePathname} from "next/navigation";
 import {Separator} from "@base-ui/react";
 import {navItems} from "@/constants";
 import Link from "next/link";
-import {cn} from "@/lib/utils";
+import {cn, getFileProxyUrl} from "@/lib/utils";
 import {Button} from "@/components/ui/button";
 import FileUploader from "@/components/FileUploader";
 import {signOutUser} from "@/lib/actions/user.actions";
@@ -55,10 +55,11 @@ const MobileNavigation = ({$id: ownerId, accountId, fullName, avatar, email}: Mo
                     <SheetTitle>
                         <div className="header-user">
                             <Image
-                                src={avatar}
+                                src={getFileProxyUrl(avatar)}
                                 alt="Avatar"
                                 width={44}
                                 height={44}
+                                unoptimized={getFileProxyUrl(avatar).startsWith('/api/files/')}
                                 className="header-user-avatar"
                             />
                             <div className="sm:hidden lg:block">

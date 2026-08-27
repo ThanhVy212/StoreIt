@@ -4,18 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FileCardProps, FileTableListProps } from '@/types/db.types';
-import { cn, convertFileSize, formatDateTime, getFileIcon } from '@/lib/utils';
+import { cn, convertFileSize, formatDateTime, getFileIcon, getFileProxyUrl } from '@/lib/utils';
 import ActionDropdown from '@/components/ActionDropdown';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocale } from '@/lib/locale-context';
-
-const getFileUrl = (url: string) =>
-    url?.includes('project=undefined')
-        ? url.replace(
-              'project=undefined',
-              `project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`
-          )
-        : url;
 
 const FileTableRow = ({
     file,
@@ -26,7 +18,7 @@ const FileTableRow = ({
     currentUserEmail,
 }: FileCardProps) => {
     const { lang } = useLocale();
-    const fileUrl = getFileUrl(file.url);
+    const fileUrl = getFileProxyUrl(file.url);
     const modifiedAt = file.$updatedAt || file.$createdAt;
 
     return (
@@ -66,10 +58,11 @@ const FileTableRow = ({
 
             <p className="file-table-cell file-table-cell-owner">
                 <Image
-                    src={file.owner?.avatar ?? ""}
+                    src={getFileProxyUrl(file.owner?.avatar) || "/assets/icons/avatar-default.svg"}
                     alt="avatar"
                     width={24}
                     height={24}
+                    unoptimized={getFileProxyUrl(file.owner?.avatar).startsWith('/api/files/')}
                     className="file-table-owner-avatar"
                 />
 

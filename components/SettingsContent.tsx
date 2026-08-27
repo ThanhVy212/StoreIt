@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { updateUser, uploadAvatar } from "@/lib/actions/user.actions";
+import { getFileProxyUrl } from "@/lib/utils";
 import { toast } from "@/components/ui/toast";
 import { useLocale } from "@/lib/locale-context";
 import { useRouter, usePathname } from "next/navigation";
@@ -121,10 +122,11 @@ const SettingsContent = ({ avatar, fullName, email }: SidebarProps) => {
                 <div className="space-y-6">
                     <div className="flex items-center gap-4">
                         <Image
-                            src={avatarUrl}
+                            src={getFileProxyUrl(avatarUrl)}
                             alt="Avatar"
                             width={192}
                             height={192}
+                            unoptimized={getFileProxyUrl(avatarUrl).startsWith('/api/files/')}
                             className="profile-user-avatar"
                             priority
                         />

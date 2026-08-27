@@ -24,7 +24,7 @@ import {actionsDropdownItems, sharedActionsDropdownItems, trashActionsDropdownIt
 import {addExtension, constructDownloadUrl, downloadFile, removeExtension} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import {deleteFile, moveFileToTrash, renameFile, restoreFile, updateFileUsers, unshareFileForMe} from "@/lib/actions/file.actions";
+import {deleteFile, getFilePublicLinks, moveFileToTrash, renameFile, restoreFile, updateFileUsers, unshareFileForMe} from "@/lib/actions/file.actions";
 import {usePathname} from "next/navigation";
 import {FileDetails, ShareInput} from "@/components/ActionsModalContent";
 import {toast} from "@/components/ui/toast";
@@ -39,7 +39,9 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
     const [name, setName] = useState(removeExtension(file.name ?? ""))
     const [isLoading, setIsLoading] = useState(false);
     const [emails, setEmails] = useState<string[]>([]);
+    const [activePublicLink, setActivePublicLink] = useState<{ tokenId: string; expiresAt: string; url: string } | null>(null);
     const shareValidatorRef = useRef<(() => boolean) | null>(null);
+    const linkGenerationRef = useRef(0);
     const { dictionary: t } = useLocale();
 
     const path = usePathname();
@@ -63,6 +65,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
         setAction(null);
         setName(removeExtension(file.name ?? ""));
         setEmails([]);
+        setActivePublicLink(null);
     }
 
     const handleAction = async (selectedAction?: ActionType | null) => {
@@ -141,6 +144,22 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
         });
     };
 
+    const fetchPublicLinks = async () => {
+        const generation = ++linkGenerationRef.current;
+        try {
+            const links = await getFilePublicLinks(file.$id);
+            if (generation !== linkGenerationRef.current) return;
+            if (Array.isArray(links) && links.length > 0) {
+                setActivePublicLink(links[0]);
+            } else {
+                setActivePublicLink(null);
+            }
+        } catch {
+            if (generation !== linkGenerationRef.current) return;
+            setActivePublicLink(null);
+        }
+    };
+
     const renderDialogContent = () => {
         if(!action || !['rename', 'share', 'delete', 'details'].includes(action.value)) return null;
 
@@ -163,7 +182,18 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                         <FileDetails file={file} />
                     )}
                     {value === "share" && (
-                        <ShareInput file={file} onAddEmails={handleAddEmails} onRemove={handleRemoveUser} isOwner={isOwner} registerValidator={(fn) => { shareValidatorRef.current = fn; }} sharedEmails={emails} onLoadingChange={setIsLoading}/>
+                        <ShareInput
+                            file={file}
+                            onAddEmails={handleAddEmails}
+                            onRemove={handleRemoveUser}
+                            isOwner={isOwner}
+                            registerValidator={(fn) => { shareValidatorRef.current = fn; }}
+                            sharedEmails={emails}
+                            onLoadingChange={setIsLoading}
+                            onPublicLinkRevoked={() => setActivePublicLink(null)}
+                            onLinkGenerated={() => { linkGenerationRef.current++; }}
+                            activePublicLink={activePublicLink}
+                        />
                     )}
                     {value === "delete" && (
                         <p className="delete-confirmation">
@@ -228,6 +258,7 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow;
                                     }
                                     if (item.value === "share") {
                                         setEmails(file.users ?? []);
+                                        fetchPublicLinks();
                                     }
 
                                     setAction(item);

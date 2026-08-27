@@ -9,6 +9,7 @@ import { MAX_FILE_SIZE } from "@/constants";
 import { toast } from "@/components/ui/toast";
 import { usePathname } from "next/navigation";
 import { saveFileRecord } from "@/lib/actions/file.actions";
+import { getAppwriteJWT } from "@/lib/actions/user.actions";
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID } from "appwrite";
 import UploadProgressList, { UploadingFile } from "@/components/UploadProgressList";
@@ -30,6 +31,7 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
         end: number,
         totalSize: number,
         isFirstChunk: boolean,
+        jwt: string | null,
         onChunkProgress: (loadedInChunk: number) => void
     ): { promise: Promise<any>; xhr: XMLHttpRequest } => {
         const xhr = new XMLHttpRequest();
@@ -41,7 +43,11 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
             formData.append('file', chunkFile);
 
             xhr.open('POST', url);
+            xhr.withCredentials = true;
             xhr.setRequestHeader('X-Appwrite-Project', projectId);
+            if (jwt) {
+                xhr.setRequestHeader('X-Appwrite-JWT', jwt);
+            }
             xhr.setRequestHeader('Content-Range', `bytes ${start}-${end - 1}/${totalSize}`);
             if (!isFirstChunk) {
                 xhr.setRequestHeader('x-appwrite-id', fileId);
@@ -83,6 +89,7 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
         onProgress: (loaded: number, total: number, percent: number) => void,
         onXhrCreated: (xhr: XMLHttpRequest) => void
     ): Promise<any> => {
+        const jwt = await getAppwriteJWT();
         const fileId = ID.unique();
         const totalSize = file.size;
         const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
@@ -104,6 +111,7 @@ const FileUploader = ({ ownerId, accountId, className, folderId }: FileUploaderP
                 end,
                 totalSize,
                 isFirstChunk,
+                jwt,
                 (loadedInChunk) => {
                     const totalLoaded = Math.min(start + loadedInChunk, totalSize);
                     const percent = Math.min(Math.round((totalLoaded / totalSize) * 100), 100);

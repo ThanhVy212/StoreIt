@@ -64,6 +64,23 @@ const assertFolderAuthorized = async (tablesDB: TablesDB, folderId: string) => {
     }
 };
 
+const assertFolderOwner = async (tablesDB: TablesDB, folderId: string) => {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("No user found");
+
+    const folder = await tablesDB.getRow({
+        databaseId: appwriteConfig.databaseId,
+        tableId: appwriteConfig.foldersTableId,
+        rowId: folderId,
+    });
+
+    if (folder.owner !== currentUser.$id) {
+        throw new Error("Only the folder owner can perform this action.");
+    }
+
+    return { currentUser, folder };
+};
+
 export const createFolder = async ({
     name,
     accountId,
@@ -479,7 +496,7 @@ export const renameFolder = async ({
     const { tablesDB } = await createAdminClient();
 
     try {
-        await assertFolderAuthorized(tablesDB, folderId);
+        await assertFolderOwner(tablesDB, folderId);
 
         const updated = await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
@@ -508,7 +525,7 @@ export const updateFolderUsers = async ({
     const { tablesDB } = await createAdminClient();
 
     try {
-        await assertFolderAuthorized(tablesDB, folderId);
+        await assertFolderOwner(tablesDB, folderId);
 
         const updated = await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
@@ -533,7 +550,7 @@ const setFoldersTrashed = async (
     const { tablesDB } = await createAdminClient();
 
     await Promise.all(
-        folderIds.map((folderId) => assertFolderAuthorized(tablesDB, folderId))
+        folderIds.map((folderId) => assertFolderOwner(tablesDB, folderId))
     );
 
     const getAllSubfolderIds = async (parentIds: string[]): Promise<string[]> => {
@@ -683,7 +700,7 @@ const deleteFolderAndContents = async (folderIds: string[]) => {
     const { tablesDB, storage } = await createAdminClient();
 
     await Promise.all(
-        folderIds.map((folderId) => assertFolderAuthorized(tablesDB, folderId))
+        folderIds.map((folderId) => assertFolderOwner(tablesDB, folderId))
     );
 
     // Get all subfolder IDs recursively

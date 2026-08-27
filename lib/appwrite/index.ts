@@ -1,7 +1,7 @@
 'use server';
 
 import {appwriteConfig} from "@/lib/appwrite/config";
-import {Account, Avatars, Client, Storage, TablesDB} from "node-appwrite";
+import {Account, Avatars, Client, Storage, TablesDB, Tokens} from "node-appwrite";
 import {cookies} from "next/headers";
 
 export const createSessionClient = async () => {
@@ -45,6 +45,9 @@ export const createAdminClient = async () => {
         },
         get avatars() {
             return new Avatars(client);
+        },
+        get tokens() {
+            return new Tokens(client);
         },
     };
 };

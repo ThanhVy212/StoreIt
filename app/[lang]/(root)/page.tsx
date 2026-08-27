@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getFiles, getTotalSpaceUsed } from "@/lib/actions/file.actions";
 import { getFolders, getFolderFileCountForMultiple } from "@/lib/actions/folder.actions";
-import { convertFileSize, getUsageSummary } from "@/lib/utils";
+import { convertFileSize, getFileProxyUrl, getUsageSummary } from "@/lib/utils";
 import Chart from "@/components/Chart";
 import { Separator } from "@/components/ui/separator";
 import FormattedDateTime from "@/components/FormattedDateTime";
@@ -107,7 +107,7 @@ const Dashboard = async ({ params }: { params: Promise<{ lang: string }> }) => {
                                 className="flex items-center justify-between gap-3"
                             >
                                 <Link
-                                    href={file.url}
+                                    href={getFileProxyUrl(file.url)}
                                     target="_blank"
                                     className="flex items-center gap-3 min-w-0 flex-1"
                                 >
