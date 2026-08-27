@@ -57,13 +57,6 @@ export async function GET(
 
         // Check authentication & permissions
         if (token) {
-            if (!fileDoc) {
-                return NextResponse.json(
-                    { error: "File not found" },
-                    { status: 404 }
-                );
-            }
-
             // Verify public share link in Database
             const linkResults = await tablesDB
                 .listRows({
@@ -81,15 +74,7 @@ export async function GET(
                 );
             }
 
-            const linkFileIds = Array.isArray(link.fileId) ? link.fileId : [link.fileId];
-            if (!linkFileIds.includes(fileDoc.$id)) {
-                return NextResponse.json(
-                    { error: "Forbidden: This link does not match the requested file" },
-                    { status: 403 }
-                );
-            }
-
-            if (link.bucketFileId !== fileDoc.bucketFileId) {
+            if (link.bucketFileId !== bucketFileId) {
                 return NextResponse.json(
                     { error: "Forbidden: This link does not match the requested file" },
                     { status: 403 }
@@ -108,37 +93,32 @@ export async function GET(
                 return NextResponse.json({ error: "Unauthorized: Please log in" }, { status: 401 });
             }
 
-            if (!fileDoc) {
-                return NextResponse.json(
-                    { error: "Forbidden: No file record found for this file" },
-                    { status: 403 }
-                );
-            }
+            if (fileDoc) {
+                const ownerId = typeof fileDoc.owner === "object" ? fileDoc.owner?.$id : fileDoc.owner;
+                const isOwner =
+                    fileDoc.accountId === currentUser.$id ||
+                    ownerId === currentUser.$id ||
+                    fileDoc.owner?.email === currentUser.email;
 
-            const ownerId = typeof fileDoc.owner === "object" ? fileDoc.owner?.$id : fileDoc.owner;
-            const isOwner =
-                fileDoc.accountId === currentUser.$id ||
-                ownerId === currentUser.$id ||
-                fileDoc.owner?.email === currentUser.email;
+                const isShared =
+                    Array.isArray(fileDoc.users) &&
+                    fileDoc.users.some(
+                        (u: any) =>
+                            u === currentUser.email ||
+                            u === currentUser.$id ||
+                            (typeof u === "object" && (u?.email === currentUser.email || u?.$id === currentUser.$id))
+                    );
 
-            const isShared =
-                Array.isArray(fileDoc.users) &&
-                fileDoc.users.some(
-                    (u: any) =>
-                        u === currentUser.email ||
-                        u === currentUser.$id ||
-                        (typeof u === "object" && (u?.email === currentUser.email || u?.$id === currentUser.$id))
-                );
-
-            if (!isOwner && !isShared) {
-                return NextResponse.json(
-                    { error: "Forbidden: You do not have permission to access this file" },
-                    { status: 403 }
-                );
+                if (!isOwner && !isShared) {
+                    return NextResponse.json(
+                        { error: "Forbidden: You do not have permission to access this file" },
+                        { status: 403 }
+                    );
+                }
             }
         }
 
-        // Fetch file from storage; treat missing-file as authorization failure
+        // Fetch file from storage; always use getFileDownload to get full original resolution
         let fileMetadata: Awaited<ReturnType<typeof storage.getFile>>;
         let arrayBuffer: ArrayBuffer;
         try {
@@ -147,17 +127,11 @@ export async function GET(
                 fileId: bucketFileId,
             });
 
-            arrayBuffer = isDownload
-                ? await storage.getFileDownload({
-                      bucketId: appwriteConfig.bucketId,
-                      fileId: bucketFileId,
-                      token,
-                  })
-                : await storage.getFileView({
-                      bucketId: appwriteConfig.bucketId,
-                      fileId: bucketFileId,
-                      token,
-                  });
+            arrayBuffer = await storage.getFileDownload({
+                bucketId: appwriteConfig.bucketId,
+                fileId: bucketFileId,
+                token,
+            });
         } catch {
             return NextResponse.json(
                 { error: "Forbidden: File not found or inaccessible" },
@@ -168,7 +142,7 @@ export async function GET(
         const headers = new Headers();
         headers.set("Content-Type", fileMetadata.mimeType || "application/octet-stream");
         headers.set("Content-Length", String(arrayBuffer.byteLength));
-        headers.set("Cache-Control", "private, max-age=3600");
+        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
         if (isDownload) {
             const safeName = encodeURIComponent(fileMetadata.name || "download");
             headers.set("Content-Disposition", `attachment; filename*=UTF-8''${safeName}`);

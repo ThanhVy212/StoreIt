@@ -615,6 +615,43 @@ export const getTotalSpaceUsed = async () => {
 
 const ALLOWED_LINK_HOURS = [12, 24, 72, 168];
 
+export const cleanupStalePublicLinks = async () => {
+    try {
+        const { tablesDB, tokens } = await createAdminClient();
+        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+
+        const allLinks = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.fileLinksTableId,
+            queries: [Query.limit(100), Query.orderAsc("$createdAt")],
+        }).catch(() => ({ rows: [] }));
+
+        for (const link of allLinks.rows) {
+            const expireTime = link.expiresAt ? new Date(link.expiresAt).getTime() : null;
+            const updatedTime = (link.$updatedAt || link.$createdAt)
+                ? new Date(link.$updatedAt || link.$createdAt).getTime()
+                : expireTime;
+
+            const isExpiredThreeDays = expireTime !== null && (now - expireTime > threeDaysMs);
+            const isRevokedThreeDays = link.revoked && updatedTime !== null && (now - updatedTime > threeDaysMs);
+
+            if (isExpiredThreeDays || isRevokedThreeDays) {
+                if (link.tokenId) {
+                    await tokens.delete({ tokenId: link.tokenId }).catch(() => {});
+                }
+                await tablesDB.deleteRow({
+                    databaseId: appwriteConfig.databaseId,
+                    tableId: appwriteConfig.fileLinksTableId,
+                    rowId: link.$id,
+                }).catch(() => {});
+            }
+        }
+    } catch (err) {
+        console.error("Failed to cleanup stale public links:", err);
+    }
+};
+
 export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePublicLinkProps) => {
     if (!ALLOWED_LINK_HOURS.includes(expiresIn)) {
         throw new Error("Invalid link expiration.");
@@ -622,25 +659,30 @@ export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePu
     const currentUser = await assertFileAuthenticated();
     const file = await assertFileOwner(fileId, currentUser);
     const { tokens, tablesDB } = await createAdminClient();
+
+    // Trigger cleanup of old stale links (expired or revoked > 3 days)
+    cleanupStalePublicLinks().catch(() => {});
+
     try {
-        // Revoke any existing active links for this file to ensure single active fresh token
+        // Invalidate and delete any existing links for this file so old links definitely stop working
         const existingLinks = await tablesDB.listRows({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.fileLinksTableId,
             queries: [
-                Query.equal("fileId", [fileId]),
-                Query.equal("revoked", [false]),
+                Query.equal("bucketFileId", [file.bucketFileId as string]),
             ],
         });
         for (const oldLink of existingLinks.rows) {
-            await tokens.delete({ tokenId: oldLink.tokenId }).catch(() => {});
-            await tablesDB.updateRow({
+            if (oldLink.tokenId) {
+                await tokens.delete({ tokenId: oldLink.tokenId }).catch(() => {});
+            }
+            await tablesDB.deleteRow({
                 databaseId: appwriteConfig.databaseId,
                 tableId: appwriteConfig.fileLinksTableId,
                 rowId: oldLink.$id,
-                data: { revoked: true },
-            });
+            }).catch(() => {});
         }
+
         const expiresAt = new Date(Date.now() + expiresIn * 60 * 60 * 1000);
 
         const token = await tokens.createFileToken({
@@ -650,7 +692,7 @@ export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePu
         });
 
         const linkRow = {
-            fileId: [fileId],
+            fileId,
             bucketFileId: file.bucketFileId,
             tokenId: token.$id,
             createdBy: currentUser.$id,
@@ -730,6 +772,9 @@ export const getFilePublicLinks = async (fileId: string) => {
         throw new Error("You are not allowed to view links for this file.");
     }
 
+    // Trigger cleanup of old stale links
+    cleanupStalePublicLinks().catch(() => {});
+
     const { tablesDB } = await createAdminClient();
 
     try {
@@ -743,7 +788,10 @@ export const getFilePublicLinks = async (fileId: string) => {
             ],
         });
 
-        const result = links.rows.map((link: any) => ({
+        const now = new Date();
+        const activeLinks = links.rows.filter((link: any) => new Date(link.expiresAt) > now);
+
+        const result = activeLinks.map((link: any) => ({
             tokenId: link.tokenId,
             expiresAt: link.expiresAt,
             url: `/api/files/${file.bucketFileId}?token=${link.tokenId}`,

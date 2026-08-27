@@ -213,7 +213,9 @@ export const uploadAvatar = async ({
 
     const extension = file.name.split(".").pop() || "jpg";
     const fileName = `avatar/${currentUser.$id}.${extension}`;
-    const inputFile = InputFile.fromBuffer(file, fileName);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const inputFile = InputFile.fromBuffer(buffer, fileName);
 
     const permissions = [
         Permission.read(Role.any()),
