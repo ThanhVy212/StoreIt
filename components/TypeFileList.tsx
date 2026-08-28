@@ -249,6 +249,7 @@ const TypeFileList = ({ files, isTrash = false, currentUserId, currentUserEmail 
                             onToggleSelect={() => handleToggleSelect(file.$id)}
                             currentUserId={currentUserId}
                             currentUserEmail={currentUserEmail}
+                            allFiles={files}
                         />
                     ))}
                 </section>

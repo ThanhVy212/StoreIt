@@ -86,6 +86,7 @@ export const uploadFile = async ({file, ownerId, accountId, path, folderId}: Upl
             users: [],
             bucketFileId: bucketFile.$id,
             trashed: false,
+            trashedAt: null,
             folderId: folderId || null,
         }
 
@@ -150,6 +151,7 @@ export const saveFileRecord = async ({
             users: [],
             bucketFileId,
             trashed: false,
+            trashedAt: null,
             folderId: folderId || null,
         };
 
@@ -436,13 +438,15 @@ const setFilesTrashed = async (fileIds: string[], trashed: boolean, path: string
         }
     }
 
+    const trashedAt = trashed ? new Date().toISOString() : null;
+
     await Promise.all(
         fileIds.map((fileId) =>
             tablesDB.updateRow({
                 databaseId: appwriteConfig.databaseId,
                 tableId: appwriteConfig.filesTableId,
                 rowId: fileId,
-                data: { trashed },
+                data: { trashed, trashedAt },
             })
         )
     );
@@ -620,6 +624,7 @@ export const cleanupStalePublicLinks = async () => {
         const { tablesDB, tokens } = await createAdminClient();
         const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
         const now = Date.now();
+        let deletedCount = 0;
 
         const allLinks = await tablesDB.listRows({
             databaseId: appwriteConfig.databaseId,
@@ -645,10 +650,127 @@ export const cleanupStalePublicLinks = async () => {
                     tableId: appwriteConfig.fileLinksTableId,
                     rowId: link.$id,
                 }).catch(() => {});
+                deletedCount++;
             }
         }
+
+        return { success: true, deletedCount };
     } catch (err) {
         console.error("Failed to cleanup stale public links:", err);
+        return { success: false, error: err instanceof Error ? err.message : String(err), deletedCount: 0 };
+    }
+};
+
+export const autoDeleteOldTrashedFiles = async () => {
+    try {
+        const { tablesDB, storage } = await createAdminClient();
+        const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        let deletedFilesCount = 0;
+        let deletedFoldersCount = 0;
+
+        // 1. Process trashed files
+        let fileOffset = 0;
+        while (true) {
+            const trashedFiles = await tablesDB.listRows({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.filesTableId,
+                queries: [
+                    Query.equal("trashed", [true]),
+                    Query.limit(100),
+                    Query.offset(fileOffset),
+                ],
+            }).catch(() => ({ rows: [] }));
+
+            const rows = trashedFiles.rows ?? [];
+            if (rows.length === 0) break;
+
+            for (const file of rows) {
+                const trashedTime = file.trashedAt
+                    ? new Date(file.trashedAt).getTime()
+                    : (file.$updatedAt ? new Date(file.$updatedAt).getTime() : null);
+
+                if (trashedTime !== null && (now - trashedTime >= sevenDaysMs)) {
+                    // Delete from DB
+                    await tablesDB.deleteRow({
+                        databaseId: appwriteConfig.databaseId,
+                        tableId: appwriteConfig.filesTableId,
+                        rowId: file.$id,
+                    }).catch(() => {});
+
+                    // Delete from Storage
+                    if (file.bucketFileId) {
+                        await storage.deleteFile({
+                            bucketId: appwriteConfig.bucketId,
+                            fileId: file.bucketFileId,
+                        }).catch(() => {});
+                    }
+
+                    // Delete any public links
+                    if (appwriteConfig.fileLinksTableId && file.bucketFileId) {
+                        const links = await tablesDB.listRows({
+                            databaseId: appwriteConfig.databaseId,
+                            tableId: appwriteConfig.fileLinksTableId,
+                            queries: [Query.equal("bucketFileId", [file.bucketFileId])],
+                        }).catch(() => ({ rows: [] }));
+
+                        for (const link of links.rows) {
+                            await tablesDB.deleteRow({
+                                databaseId: appwriteConfig.databaseId,
+                                tableId: appwriteConfig.fileLinksTableId,
+                                rowId: link.$id,
+                            }).catch(() => {});
+                        }
+                    }
+
+                    deletedFilesCount++;
+                }
+            }
+
+            if (rows.length < 100) break;
+            fileOffset += 100;
+        }
+
+        // 2. Process trashed folders
+        let folderOffset = 0;
+        while (true) {
+            const trashedFolders = await tablesDB.listRows({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.foldersTableId,
+                queries: [
+                    Query.equal("trashed", [true]),
+                    Query.limit(100),
+                    Query.offset(folderOffset),
+                ],
+            }).catch(() => ({ rows: [] }));
+
+            const rows = trashedFolders.rows ?? [];
+            if (rows.length === 0) break;
+
+            for (const folder of rows) {
+                const trashedTime = folder.trashedAt
+                    ? new Date(folder.trashedAt).getTime()
+                    : (folder.$updatedAt ? new Date(folder.$updatedAt).getTime() : null);
+
+                if (trashedTime !== null && (now - trashedTime >= sevenDaysMs)) {
+                    await tablesDB.deleteRow({
+                        databaseId: appwriteConfig.databaseId,
+                        tableId: appwriteConfig.foldersTableId,
+                        rowId: folder.$id,
+                    }).catch(() => {});
+
+                    deletedFoldersCount++;
+                }
+            }
+
+            if (rows.length < 100) break;
+            folderOffset += 100;
+        }
+
+        return { success: true, deletedFilesCount, deletedFoldersCount };
+    } catch (err) {
+        console.error("Failed to auto delete old trashed files:", err);
+        return { success: false, error: err instanceof Error ? err.message : String(err), deletedFilesCount: 0, deletedFoldersCount: 0 };
     }
 };
 
@@ -656,12 +778,12 @@ export const createPublicFileLink = async ({ fileId, expiresIn, path }: CreatePu
     if (!ALLOWED_LINK_HOURS.includes(expiresIn)) {
         throw new Error("Invalid link expiration.");
     }
+    if (!appwriteConfig.fileLinksTableId) {
+        throw new Error("Missing NEXT_PUBLIC_APPWRITE_FILE_LINKS_COLLECTION environment variable.");
+    }
     const currentUser = await assertFileAuthenticated();
     const file = await assertFileOwner(fileId, currentUser);
     const { tokens, tablesDB } = await createAdminClient();
-
-    // Trigger cleanup of old stale links (expired or revoked > 3 days)
-    cleanupStalePublicLinks().catch(() => {});
 
     try {
         // Invalidate and delete any existing links for this file so old links definitely stop working
@@ -771,9 +893,6 @@ export const getFilePublicLinks = async (fileId: string) => {
     if (file.accountId !== currentUser.$id) {
         throw new Error("You are not allowed to view links for this file.");
     }
-
-    // Trigger cleanup of old stale links
-    cleanupStalePublicLinks().catch(() => {});
 
     const { tablesDB } = await createAdminClient();
 

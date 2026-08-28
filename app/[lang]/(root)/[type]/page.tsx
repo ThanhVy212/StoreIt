@@ -9,6 +9,7 @@ import { FileViewProvider } from "@/components/FileViewProvider";
 import FileViewToggle from "@/components/FileViewToggle";
 import { getCurrentUser } from "@/lib/actions/user.actions";
 import { getDictionary, type Locale } from "@/lib/get-dictionary";
+import TrashBanner from "@/components/TrashBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
             <div className="page-container">
                 <section className="w-full shrink-0">
                     <h1 className="h1 capitalize">{isTrash ? dictionary.files.trash : type}</h1>
+
+                    {isTrash && <TrashBanner dictionary={dictionary} />}
 
                     <div className="total-size-section">
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

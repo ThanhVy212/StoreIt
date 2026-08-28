@@ -51,6 +51,12 @@ export const navItems = [
 
 export const actionsDropdownItems = [
     {
+        label: 'Preview',
+        key: 'preview',
+        icon: '/assets/icons/eye.svg',
+        value: 'preview',
+    },
+    {
         label: 'Rename',
         key: 'rename',
         icon: '/assets/icons/edit.svg',
@@ -83,6 +89,12 @@ export const actionsDropdownItems = [
 ];
 
 export const sharedActionsDropdownItems = [
+    {
+        label: 'Preview',
+        key: 'preview',
+        icon: '/assets/icons/eye.svg',
+        value: 'preview',
+    },
     {
         label: 'Details',
         key: 'details',

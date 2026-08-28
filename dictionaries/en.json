@@ -124,6 +124,7 @@
     "delete": "Delete",
     "unshare": "Unshare",
     "cancel": "Cancel",
+    "preview": "Preview",
     "deleteForever": "Delete forever",
     "permanentlyDelete": "Permanently delete",
     "permanentlyDeleteFolder": "Permanently delete folder {name}?",
@@ -167,7 +168,7 @@
     "expiration": "Link expiration",
     "expiresAt": "Expires:",
     "hours12": "12 hours",
-    "days1": "1 day (24h)",
+    "days1": "1 day",
     "days3": "3 days",
     "days7": "7 days",
     "linkActive": "Active",
@@ -250,5 +251,17 @@
   },
   "upload": {
     "uploading": "Uploading"
+  },
+  "preview": {
+    "title": "File Preview",
+    "previous": "Previous",
+    "next": "Next",
+    "position": "{current} / {total}",
+    "cannotPreview": "Preview not available for this file type",
+    "downloadToView": "Download to view"
+  },
+  "trash": {
+    "autoDeleteNotice": "Files in trash will be permanently deleted after 7 days.",
+    "daysRemaining": "{days} days remaining"
   }
 }

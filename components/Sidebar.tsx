@@ -24,27 +24,27 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
     };
 
     return (
-        <aside className="sidebar">
+        <aside className="sidebar remove-scrollbar">
             <Link href={`/${lang}`}>
                 <Image
                     src="/assets/icons/logo-full-brand.svg"
                     alt="logo"
-                    width={160}
-                    height={50}
+                    width={145}
+                    height={45}
                     className="hidden h-auto lg:block"
                 />
 
                 <Image
                     src="/assets/icons/logo-brand.svg"
                     alt="logo"
-                    width={52}
-                    height={52}
+                    width={44}
+                    height={44}
                     className="lg:hidden"
                 />
             </Link>
 
             <nav className="sidebar-nav">
-                <ul className="flex flex-1 flex-col gap-6">
+                <ul className="flex flex-1 flex-col gap-1.5 lg:gap-2">
                     {navItems.map(({url, name, key, icon}) => {
                         const active = isActive(url, name);
                         return (
@@ -53,8 +53,8 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
                                     <Image
                                         src={icon}
                                         alt={name}
-                                        width={24}
-                                        height={24}
+                                        width={22}
+                                        height={22}
                                         className={cn("nav-icon", active && "nav-icon-active")}
                                     />
                                     <p className="hidden lg:block">{t.nav[key as keyof typeof t.nav]}</p>
@@ -65,14 +65,20 @@ const Sidebar = ({fullName, avatar, email}: SidebarProps) => {
                 </ul>
             </nav>
 
-            <Image src="/assets/images/files-2.png" alt="logo" width={506} height={418} className="w-full" />
+            <Image
+                src="/assets/images/files-2.png"
+                alt="logo"
+                width={506}
+                height={418}
+                className="w-full max-h-[120px] 2xl:max-h-[150px] object-contain my-2"
+            />
 
             <Link href={`/${lang}/settings`} className="sidebar-user-info">
                 <Image
                     src={getFileProxyUrl(avatar)}
                     alt="Avatar"
-                    width={44}
-                    height={44}
+                    width={40}
+                    height={40}
                     unoptimized={getFileProxyUrl(avatar).startsWith('/api/files/')}
                     className="sidebar-user-avatar"
                 />

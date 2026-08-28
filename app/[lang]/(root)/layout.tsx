@@ -3,6 +3,7 @@ import MobileNavigation from "@/components/MobileNavigation";
 import Header from "@/components/Header";
 import {getCurrentUser} from "@/lib/actions/user.actions";
 import {redirect} from "next/navigation";
+import PreviewShell from "@/components/PreviewShell";
 
 const Layout = async ({children, params}: {children: React.ReactNode; params: Promise<{ lang: string }>}) => {
     const { lang } = await params;
@@ -16,7 +17,9 @@ const Layout = async ({children, params}: {children: React.ReactNode; params: Pr
             <section className="flex h-full min-h-0 flex-1 flex-col">
                 <MobileNavigation {...currentUser} />
                 <Header userId={currentUser.$id} accountId={currentUser.accountId} />
-                <div className="main-content">{children}</div>
+                <div className="main-content">
+                    <PreviewShell>{children}</PreviewShell>
+                </div>
             </section>
         </main>
     )

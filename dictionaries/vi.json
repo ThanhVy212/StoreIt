@@ -124,6 +124,7 @@
     "delete": "Xóa",
     "unshare": "Hủy chia sẻ",
     "cancel": "Hủy",
+    "preview": "Xem trước",
     "deleteForever": "Xóa vĩnh viễn",
     "permanentlyDelete": "Xóa vĩnh viễn",
     "permanentlyDeleteFolder": "Xóa vĩnh viễn thư mục {name}?",
@@ -167,7 +168,7 @@
     "expiration": "Thời hạn liên kết",
     "expiresAt": "Hết hạn:",
     "hours12": "12 giờ",
-    "days1": "1 ngày (24h)",
+    "days1": "1 ngày",
     "days3": "3 ngày",
     "days7": "7 ngày",
     "linkActive": "Đang hoạt động",
@@ -250,5 +251,17 @@
   },
   "upload": {
     "uploading": "Đang tải lên"
+  },
+  "preview": {
+    "title": "Xem trước tệp",
+    "previous": "Trước",
+    "next": "Sau",
+    "position": "{current} / {total}",
+    "cannotPreview": "Không thể xem trước loại tệp này",
+    "downloadToView": "Tải xuống để xem"
+  },
+  "trash": {
+    "autoDeleteNotice": "Các tệp trong thùng rác sẽ bị xóa vĩnh viễn sau 7 ngày.",
+    "daysRemaining": "Còn lại {days} ngày"
   }
 }

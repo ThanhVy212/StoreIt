@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { FileCardProps, FileTableListProps } from '@/types/db.types';
+import { FileCardProps, FileRow, FileTableListProps } from '@/types/db.types';
 import { cn, convertFileSize, formatDateTime, getFileIcon, getFileProxyUrl } from '@/lib/utils';
 import ActionDropdown from '@/components/ActionDropdown';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocale } from '@/lib/locale-context';
+import { useFilePreview } from '@/components/FilePreviewProvider';
 
 const FileTableRow = ({
     file,
@@ -16,10 +16,18 @@ const FileTableRow = ({
     onToggleSelect,
     currentUserId,
     currentUserEmail,
+    allFiles,
 }: FileCardProps) => {
     const { lang } = useLocale();
+    const { openPreview } = useFilePreview();
     const fileUrl = getFileProxyUrl(file.url);
     const modifiedAt = file.$updatedAt || file.$createdAt;
+
+    const handlePreviewClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPreview(file, allFiles);
+    };
 
     return (
         <div
@@ -41,10 +49,9 @@ const FileTableRow = ({
                 )}
             </div>
 
-            <Link
-                href={fileUrl}
-                target="_blank"
-                className="file-table-cell file-table-cell-name"
+            <div
+                className="file-table-cell file-table-cell-name cursor-pointer"
+                onClick={handlePreviewClick}
             >
                 <Image
                     src={getFileIcon(file.extension ?? '', file.type)}
@@ -54,7 +61,7 @@ const FileTableRow = ({
                     className="file-table-icon"
                 />
                 <span className="file-table-name">{file.name}</span>
-            </Link>
+            </div>
 
             <p className="file-table-cell file-table-cell-owner">
                 <Image
@@ -83,7 +90,7 @@ const FileTableRow = ({
                 className="file-table-cell file-table-cell-actions"
                 onClick={(e) => e.stopPropagation()}
             >
-                <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail} />
+                <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail} allFiles={allFiles} />
             </div>
         </div>
     );
@@ -116,6 +123,7 @@ const FileTableList = ({
                         isSelected={selectedIds.includes(file.$id)}
                         onToggleSelect={onToggleSelect}
                         currentUserId={currentUserId}
+                        allFiles={files}
                     />
                 ))}
             </div>
