@@ -585,13 +585,15 @@ const setFoldersTrashed = async (
     const subFolderIds = await getAllSubfolderIds(folderIds);
     allFolderIds.push(...subFolderIds);
 
+    const trashedAt = trashed ? new Date().toISOString() : null;
+
     await Promise.all(
         allFolderIds.map((folderId) =>
             tablesDB.updateRow({
                 databaseId: appwriteConfig.databaseId,
                 tableId: appwriteConfig.foldersTableId,
                 rowId: folderId,
-                data: { trashed },
+                data: { trashed, trashedAt },
             })
         )
     );
@@ -618,7 +620,7 @@ const setFoldersTrashed = async (
                         databaseId: appwriteConfig.databaseId,
                         tableId: appwriteConfig.filesTableId,
                         rowId: file.$id,
-                        data: { trashed },
+                        data: { trashed, trashedAt },
                     })
                 )
             );

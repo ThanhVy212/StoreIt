@@ -761,25 +761,32 @@
 /*SIDEBAR*/
 
 .sidebar {
-  @apply hidden h-screen w-[90px] flex-col overflow-auto px-5 py-7 sm:flex lg:w-[280px] xl:w-[325px];
+  @apply hidden h-screen w-[90px] flex-col overflow-auto px-4 py-5 sm:flex lg:w-[280px] xl:w-[300px];
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
 
 .sidebar-nav {
-  @apply mt-9 flex flex-1 flex-col gap-1 text-base leading-6 font-semibold text-brand;
+  @apply mt-6 flex flex-1 flex-col gap-1 text-sm leading-5 font-semibold text-brand;
 }
 
 .sidebar-nav-item {
-  @apply flex h-[44px] items-center justify-center gap-4 rounded-xl text-base leading-6 font-semibold text-light-100 lg:w-full lg:justify-start lg:rounded-full lg:px-[30px];
+  @apply flex h-[40px] items-center justify-center gap-3.5 rounded-xl text-sm leading-5 font-semibold text-light-100 lg:w-full lg:justify-start lg:rounded-full lg:px-6 transition-all;
 }
 
 .sidebar-user-info {
-  @apply mt-4 flex items-center justify-center gap-2 rounded-full p-1 text-light-100 lg:justify-start lg:p-3;
+  @apply mt-2 flex items-center justify-center gap-2 rounded-full p-1 text-light-100 lg:justify-start lg:p-2.5;
+
   background-color: color-mix(in srgb, var(--color-brand) 10%, transparent);
 }
 
 .sidebar-user-avatar {
-  @apply aspect-square w-10 rounded-full object-cover;
+  @apply aspect-square w-9 rounded-full object-cover;
 }
 
 .shad-active {
@@ -816,11 +823,143 @@
 
 .thumbnail {
   @apply flex size-[50px] min-w-[50px] items-center justify-center overflow-hidden rounded-full;
+
   background-color: color-mix(in srgb, var(--color-brand) 10%, transparent);
 }
 
 .thumbnail-image {
   @apply size-full object-cover object-center;
+}
+
+/* FILE PREVIEW MODAL */
+
+.file-preview-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(2px);
+}
+
+.file-preview-modal {
+  @apply relative flex h-[92vh] w-[95vw] max-w-[1200px] flex-col rounded-xl overflow-hidden;
+
+  background: rgba(18, 18, 18, 0.97);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.file-preview-header {
+  @apply flex items-center justify-between px-5 py-3;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.file-preview-info {
+  @apply min-w-0 flex-1 text-white;
+}
+
+.file-preview-actions {
+  @apply flex items-center gap-2;
+}
+
+.file-preview-action-btn {
+  @apply flex size-9 items-center justify-center rounded-lg transition-colors;
+
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.file-preview-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.file-preview-body {
+  @apply relative flex min-h-0 flex-1 items-center;
+}
+
+.file-preview-content {
+  @apply flex h-full min-h-0 flex-1 items-center justify-center overflow-auto p-4;
+}
+
+.file-preview-image-container {
+  @apply flex items-center justify-center;
+}
+
+.file-preview-image {
+  @apply max-h-[70vh] max-w-full rounded-lg object-contain;
+}
+
+.file-preview-video-container {
+  @apply flex items-center justify-center;
+}
+
+.file-preview-video {
+  @apply max-h-[70vh] max-w-full rounded-lg;
+}
+
+.file-preview-pdf-container {
+  @apply flex h-full w-full items-center justify-center;
+}
+
+.file-preview-pdf {
+  @apply h-full w-full rounded-lg border-0;
+}
+
+.file-preview-audio-container {
+  @apply flex flex-col items-center justify-center;
+}
+
+.file-preview-audio-icon {
+  @apply flex size-24 items-center justify-center rounded-full bg-brand/10;
+}
+
+.file-preview-audio {
+  @apply w-80;
+}
+
+.file-preview-unsupported {
+  @apply flex flex-col items-center justify-center text-center;
+}
+
+.file-preview-nav-btn {
+  @apply absolute top-1/2 z-10 flex size-12 -translate-y-1/2 items-center justify-center rounded-full transition-all;
+
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.file-preview-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.file-preview-nav-btn:disabled {
+  @apply cursor-not-allowed;
+
+  opacity: 0.3;
+}
+
+.file-preview-nav-prev {
+  @apply left-3;
+}
+
+.file-preview-nav-next {
+  @apply right-3;
+}
+
+.file-preview-footer {
+  @apply px-5 py-2 text-center;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* TRASH BANNER */
+
+.trash-banner {
+  @apply mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800;
+}
+
+.trash-banner-icon {
+  @apply shrink-0;
 }
 
 @theme inline {

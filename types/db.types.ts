@@ -17,6 +17,7 @@ export type FileRow = Models.Row & {
     size?: number | null;
     users?: string[] | null;
     trashed?: boolean | null;
+    trashedAt?: string | null;
     folderId?: string | null;
 };
 
@@ -27,6 +28,7 @@ export type FolderRow = Models.Row & {
     parentFolderId?: string | null;
     users?: string[] | null;
     trashed?: boolean | null;
+    trashedAt?: string | null;
 };
 
 export type FileLinkRow = Models.Row & {
@@ -82,6 +84,7 @@ export interface FileCardProps {
     onToggleSelect?: (file: FileRow) => void;
     currentUserId?: string;
     currentUserEmail?: string;
+    allFiles?: FileRow[];
 }
 
 export interface FileTableListProps {

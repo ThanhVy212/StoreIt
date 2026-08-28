@@ -2,18 +2,25 @@
 
 import React from 'react';
 import {FileCardProps} from "@/types/db.types";
-import Link from "next/link";
 import Thumbnail from "@/components/Thumbnail";
 import { cn, convertFileSize, getFileProxyUrl } from "@/lib/utils";
 import FormattedDateTime from "@/components/FormattedDateTime";
 import ActionDropdown from "@/components/ActionDropdown";
 import { Checkbox } from "@/components/ui/checkbox";
 import {useLocale} from "@/lib/locale-context";
+import {useFilePreview} from "@/components/FilePreviewProvider";
 
 
-const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelect, currentUserId, currentUserEmail}: FileCardProps) => {
+const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelect, currentUserId, currentUserEmail, allFiles}: FileCardProps) => {
     const { lang, dictionary: t } = useLocale();
+    const { openPreview } = useFilePreview();
     const fileUrl = getFileProxyUrl(file.url);
+
+    const handlePreviewClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPreview(file, allFiles);
+    };
 
     return (
         <div className={cn("file-card relative group transition-all", isSelected && "file-card-selected")}>
@@ -34,7 +41,7 @@ const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelec
                         </div>
                     )}
 
-                    <Link href={fileUrl} target="_blank">
+                    <div onClick={handlePreviewClick} className="cursor-pointer">
                         <Thumbnail
                             type={file.type}
                             extension={file.extension ?? ""}
@@ -42,7 +49,7 @@ const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelec
                             className="!size-20"
                             imageClassName={file.type === "image" || file.type === "video" ? "!size-full" : "!size-11"}
                         />
-                    </Link>
+                    </div>
                 </div>
 
                 <div className="flex flex-col items-end justify-between self-stretch">
@@ -53,13 +60,13 @@ const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelec
                 </div>
             </div>
 
-            <Link href={fileUrl} target="_blank" className="file-card-details">
+            <div onClick={handlePreviewClick} className="file-card-details cursor-pointer">
                 <p className="subtitle-2 line-clamp-1">{file.name}</p>
                 <FormattedDateTime date={file.$createdAt} className="body-2 text-light-100"/>
                 <p className="caption line-clamp-1 text-light-200">
                     {t.files.by} {file.owner?.fullName}
                 </p>
-            </Link>
+            </div>
         </div>
     );
 };
