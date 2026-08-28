@@ -261,7 +261,7 @@
     "downloadToView": "Tải xuống để xem"
   },
   "trash": {
-    "autoDeleteNotice": "Các tệp trong thùng rác sẽ bị xóa vĩnh viễn sau 7 ngày.",
+    "autoDeleteNotice": "Các tệp và thư mục trong thùng rác sẽ bị xóa vĩnh viễn sau 7 ngày.",
     "daysRemaining": "Còn lại {days} ngày"
   }
 }

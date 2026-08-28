@@ -53,7 +53,7 @@ const FileCard = ({file, showCheckbox = false, isSelected = false, onToggleSelec
                 </div>
 
                 <div className="flex flex-col items-end justify-between self-stretch">
-                    <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail} allFiles={allFiles}/>
+                    <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail}/>
                     {file.size != null && (
                         <p className="body-1">{convertFileSize(file.size)}</p>
                     )}

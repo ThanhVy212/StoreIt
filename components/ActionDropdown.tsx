@@ -29,11 +29,10 @@ import {usePathname} from "next/navigation";
 import {FileDetails, ShareInput} from "@/components/ActionsModalContent";
 import {toast} from "@/components/ui/toast";
 import {useLocale} from "@/lib/locale-context";
-import {useFilePreview} from "@/components/FilePreviewProvider";
 
 
 
-const ActionDropdown = ({file, currentUserId, currentUserEmail, allFiles}: {file: FileRow; currentUserId?: string; currentUserEmail?: string; allFiles?: FileRow[]}) => {
+const ActionDropdown = ({file, currentUserId, currentUserEmail}: {file: FileRow; currentUserId?: string; currentUserEmail?: string}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [action, setAction] = useState<ActionType | null>(null);
@@ -44,7 +43,6 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail, allFiles}: {file
     const shareValidatorRef = useRef<(() => boolean) | null>(null);
     const linkGenerationRef = useRef(0);
     const { dictionary: t } = useLocale();
-    const { openPreview } = useFilePreview();
 
     const path = usePathname();
     const isTrashed = Boolean(file.trashed);
@@ -251,12 +249,6 @@ const ActionDropdown = ({file, currentUserId, currentUserEmail, allFiles}: {file
                                 onClick={() => {
                                     if (item.value === "download") {
                                         downloadFile(constructDownloadUrl(file.bucketFileId), file.name);
-                                        setIsDropdownOpen(false);
-                                        return;
-                                    }
-
-                                    if (item.value === "preview") {
-                                        openPreview(file, allFiles);
                                         setIsDropdownOpen(false);
                                         return;
                                     }

@@ -198,7 +198,7 @@ const FilePreviewModal = () => {
                         </button>
                     )}
 
-                    <div className="file-preview-content" onClick={closePreview}>
+                    <div className="file-preview-content" onClick={(e) => e.stopPropagation()}>
                         {renderPreview()}
                     </div>
 

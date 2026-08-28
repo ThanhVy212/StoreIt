@@ -762,6 +762,7 @@
 
 .sidebar {
   @apply hidden h-screen w-[90px] flex-col overflow-auto px-4 py-5 sm:flex lg:w-[280px] xl:w-[300px];
+
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -780,6 +781,7 @@
 
 .sidebar-user-info {
   @apply mt-2 flex items-center justify-center gap-2 rounded-full p-1 text-light-100 lg:justify-start lg:p-2.5;
+
   background-color: color-mix(in srgb, var(--color-brand) 10%, transparent);
 }
 
@@ -821,6 +823,7 @@
 
 .thumbnail {
   @apply flex size-[50px] min-w-[50px] items-center justify-center overflow-hidden rounded-full;
+
   background-color: color-mix(in srgb, var(--color-brand) 10%, transparent);
 }
 
@@ -828,22 +831,25 @@
   @apply size-full object-cover object-center;
 }
 
-/*FILE PREVIEW MODAL*/
+/* FILE PREVIEW MODAL */
 
 .file-preview-overlay {
   @apply fixed inset-0 z-50 flex items-center justify-center;
+
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(2px);
 }
 
 .file-preview-modal {
   @apply relative flex h-[92vh] w-[95vw] max-w-[1200px] flex-col rounded-xl overflow-hidden;
+
   background: rgba(18, 18, 18, 0.97);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .file-preview-header {
   @apply flex items-center justify-between px-5 py-3;
+
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -857,6 +863,7 @@
 
 .file-preview-action-btn {
   @apply flex size-9 items-center justify-center rounded-lg transition-colors;
+
   color: rgba(255, 255, 255, 0.8);
 }
 
@@ -915,6 +922,7 @@
 
 .file-preview-nav-btn {
   @apply absolute top-1/2 z-10 flex size-12 -translate-y-1/2 items-center justify-center rounded-full transition-all;
+
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
 }
@@ -925,6 +933,7 @@
 
 .file-preview-nav-btn:disabled {
   @apply cursor-not-allowed;
+
   opacity: 0.3;
 }
 
@@ -938,11 +947,12 @@
 
 .file-preview-footer {
   @apply px-5 py-2 text-center;
+
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.6);
 }
 
-/*TRASH BANNER*/
+/* TRASH BANNER */
 
 .trash-banner {
   @apply mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800;

@@ -90,7 +90,7 @@ const FileTableRow = ({
                 className="file-table-cell file-table-cell-actions"
                 onClick={(e) => e.stopPropagation()}
             >
-                <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail} allFiles={allFiles} />
+                <ActionDropdown file={file} currentUserId={currentUserId} currentUserEmail={currentUserEmail} />
             </div>
         </div>
     );

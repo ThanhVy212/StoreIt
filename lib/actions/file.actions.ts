@@ -685,28 +685,30 @@ export const autoDeleteOldTrashedFiles = async () => {
             const rows = trashedFiles.rows ?? [];
             if (rows.length === 0) break;
 
+            let deletedInBatch = 0;
+
             for (const file of rows) {
                 const trashedTime = file.trashedAt
                     ? new Date(file.trashedAt).getTime()
                     : (file.$updatedAt ? new Date(file.$updatedAt).getTime() : null);
 
                 if (trashedTime !== null && (now - trashedTime >= sevenDaysMs)) {
-                    // Delete from DB
+                    // Delete row from DB first
                     await tablesDB.deleteRow({
                         databaseId: appwriteConfig.databaseId,
                         tableId: appwriteConfig.filesTableId,
                         rowId: file.$id,
-                    }).catch(() => {});
+                    });
 
-                    // Delete from Storage
+                    // Delete from Storage (only after row deletion succeeds)
                     if (file.bucketFileId) {
                         await storage.deleteFile({
                             bucketId: appwriteConfig.bucketId,
                             fileId: file.bucketFileId,
-                        }).catch(() => {});
+                        });
                     }
 
-                    // Delete any public links
+                    // Delete any public links (best-effort, non-fatal)
                     if (appwriteConfig.fileLinksTableId && file.bucketFileId) {
                         const links = await tablesDB.listRows({
                             databaseId: appwriteConfig.databaseId,
@@ -723,12 +725,13 @@ export const autoDeleteOldTrashedFiles = async () => {
                         }
                     }
 
+                    deletedInBatch++;
                     deletedFilesCount++;
                 }
             }
 
             if (rows.length < 100) break;
-            fileOffset += 100;
+            fileOffset = deletedInBatch > 0 ? 0 : fileOffset + 100;
         }
 
         // 2. Process trashed folders
@@ -747,6 +750,8 @@ export const autoDeleteOldTrashedFiles = async () => {
             const rows = trashedFolders.rows ?? [];
             if (rows.length === 0) break;
 
+            let deletedInBatch = 0;
+
             for (const folder of rows) {
                 const trashedTime = folder.trashedAt
                     ? new Date(folder.trashedAt).getTime()
@@ -757,14 +762,15 @@ export const autoDeleteOldTrashedFiles = async () => {
                         databaseId: appwriteConfig.databaseId,
                         tableId: appwriteConfig.foldersTableId,
                         rowId: folder.$id,
-                    }).catch(() => {});
+                    });
 
+                    deletedInBatch++;
                     deletedFoldersCount++;
                 }
             }
 
             if (rows.length < 100) break;
-            folderOffset += 100;
+            folderOffset = deletedInBatch > 0 ? 0 : folderOffset + 100;
         }
 
         return { success: true, deletedFilesCount, deletedFoldersCount };

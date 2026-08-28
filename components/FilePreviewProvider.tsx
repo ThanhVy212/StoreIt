@@ -26,8 +26,15 @@ export const FilePreviewProvider = ({ children }: { children: React.ReactNode })
     const totalCount = previewFiles.length;
 
     const openPreview = useCallback((file: FileRow, files?: FileRow[]) => {
+        let normalizedFiles: FileRow[];
+        if (files && files.length > 0) {
+            const fileInList = files.some((f) => f.$id === file.$id);
+            normalizedFiles = fileInList ? files : [...files, file];
+        } else {
+            normalizedFiles = [file];
+        }
         setPreviewFile(file);
-        setPreviewFiles(files && files.length > 0 ? files : [file]);
+        setPreviewFiles(normalizedFiles);
         setIsOpen(true);
     }, []);
 
